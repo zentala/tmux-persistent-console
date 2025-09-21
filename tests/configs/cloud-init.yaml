@@ -1,0 +1,117 @@
+#cloud-config
+# Cloud-init configuration for tmux-persistent-console testing
+
+users:
+  - default
+  - name: testuser
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+# Update system and install required packages
+package_update: true
+package_upgrade: true
+
+packages:
+  - tmux
+  - git
+  - curl
+  - wget
+  - htop
+  - tree
+  - vim
+  - ssh
+  - build-essential
+
+# Install tmux-persistent-console
+runcmd:
+  # Update system
+  - apt-get update
+  - apt-get upgrade -y
+
+  # Install tmux if not already present
+  - apt-get install -y tmux git curl wget htop tree vim ssh build-essential
+
+  # Create test user home directory structure
+  - mkdir -p /home/testuser/{bin,.ssh}
+  - chown -R testuser:testuser /home/testuser
+
+  # Download and install tmux-persistent-console
+  - su - testuser -c 'curl -sSL https://raw.githubusercontent.com/zentala/tmux-persistent-console/main/install.sh | bash'
+
+  # Create a simple test script
+  - |
+    cat > /home/testuser/test-tmux-console.sh << 'EOF'
+    #!/bin/bash
+    echo "=== Tmux Persistent Console Test ==="
+    echo "Testing installation..."
+
+    # Test if sessions exist
+    echo "Checking sessions:"
+    tmux ls
+
+    # Test connect script
+    echo "Testing connect script:"
+    which connect-console
+
+    # Test setup script
+    echo "Testing setup script:"
+    which setup-console-sessions
+
+    # Test tmux config
+    echo "Testing tmux configuration:"
+    tmux show-options -g | grep -E "(mouse|base-index|history-limit)"
+
+    echo "=== Test completed! ==="
+    EOF
+
+  - chmod +x /home/testuser/test-tmux-console.sh
+  - chown testuser:testuser /home/testuser/test-tmux-console.sh
+
+  # Enable SSH service
+  - systemctl enable ssh
+  - systemctl start ssh
+
+  # Configure SSH for better connectivity
+  - |
+    cat >> /etc/ssh/sshd_config << 'EOF'
+    # Tmux Console Test Configuration
+    ClientAliveInterval 60
+    ClientAliveCountMax 3
+    TCPKeepAlive yes
+    EOF
+
+  - systemctl restart ssh
+
+  # Create welcome message
+  - |
+    cat > /etc/motd << 'EOF'
+    ===============================================
+    🖥️  TMUX PERSISTENT CONSOLE TEST SERVER
+    ===============================================
+
+    This server is configured for testing tmux-persistent-console.
+
+    Quick commands:
+    - tmux ls                    # List all sessions
+    - connect-console           # Interactive session menu
+    - test-tmux-console.sh      # Run test suite
+    - tmux attach -t console-1  # Direct to console-1
+
+    Function keys (Ctrl+F1-F7) work for session switching!
+
+    Repository: https://github.com/zentala/tmux-persistent-console
+    ===============================================
+    EOF
+
+# Final setup
+final_message: |
+  Tmux Persistent Console test server is ready!
+
+  Connect via SSH and test with:
+  - tmux ls
+  - connect-console
+  - ./test-tmux-console.sh
+
+  Have fun testing! 🚀

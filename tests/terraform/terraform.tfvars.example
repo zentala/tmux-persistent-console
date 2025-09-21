@@ -1,0 +1,21 @@
+# Oracle Cloud Infrastructure Configuration
+# Copy this file to terraform.tfvars and fill in your values
+
+# OCI Authentication
+tenancy_ocid         = "ocid1.tenancy.oc1..aaaaaaaa..."
+user_ocid           = "ocid1.user.oc1..aaaaaaaa..."
+fingerprint         = "aa:bb:cc:dd:ee:ff:11:22:33:44:55:66:77:88:99:00"
+private_key_path    = "~/.oci/oci_api_key.pem"
+
+# OCI Region and Compartment
+region              = "us-ashburn-1"  # Choose your preferred region
+compartment_ocid    = "ocid1.compartment.oc1..aaaaaaaa..."
+
+# SSH Configuration
+ssh_public_key_path = "~/.ssh/id_rsa.pub"
+
+# Instance Configuration
+instance_name       = "tmux-console-test"
+
+# Available regions for Free Tier:
+# us-ashburn-1, us-phoenix-1, eu-frankfurt-1, ap-seoul-1, ap-tokyo-1, uk-london-1

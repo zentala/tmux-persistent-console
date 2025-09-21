@@ -285,6 +285,45 @@ Created out of frustration with losing hours of work when SSH connections crashe
 
 **This tool makes remote server work with AI CLI tools much simpler and safer!**
 
+## 🧪 Testing Infrastructure
+
+Want to test tmux-persistent-console on a real server? We provide automated testing infrastructure using **Oracle Cloud Free Tier**!
+
+### Quick Test Deployment
+```bash
+# 1. Clone repository
+git clone https://github.com/zentala/tmux-persistent-console.git
+cd tmux-persistent-console
+
+# 2. Setup Oracle Cloud credentials
+cp tests/terraform/terraform.tfvars.example tests/terraform/terraform.tfvars
+# Edit with your Oracle Cloud details
+
+# 3. Deploy test server (FREE!)
+cd tests/scripts
+./deploy.sh
+
+# 4. Run comprehensive tests
+./test-remote.sh
+
+# 5. Interactive testing
+./interactive-test.sh
+
+# 6. Cleanup when done
+./destroy.sh
+```
+
+### What You Get
+- **Free ARM server** (4 cores, 24GB RAM) on Oracle Cloud
+- **Automated installation** and configuration
+- **Comprehensive test suite** with 10+ test scenarios
+- **Interactive testing menu** for manual validation
+- **One-click deployment/cleanup**
+
+See [`tests/README.md`](tests/README.md) for detailed testing documentation.
+
+**🎉 Test your tmux-persistent-console setup risk-free on real cloud infrastructure!**
+
 ## 🔗 Related Projects
 
 - [tmux](https://github.com/tmux/tmux) - Terminal multiplexer
