@@ -1,0 +1,354 @@
+name: 🚀 Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  TF_VERSION: "1.6.0"
+
+jobs:
+  # Pre-release validation
+  pre-release-validation:
+    name: 🔍 Pre-Release Validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🏷️ Validate version tag
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            VERSION_TAG="${{ github.ref_name }}"
+          else
+            VERSION_TAG="${{ github.event.inputs.version }}"
+          fi
+
+          echo "Validating version: $VERSION_TAG"
+
+          # Check version format (semantic versioning)
+          if [[ ! "$VERSION_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$ ]]; then
+            echo "❌ Invalid version format: $VERSION_TAG"
+            echo "Expected format: v1.2.3 or v1.2.3-beta"
+            exit 1
+          fi
+
+          echo "✅ Version format is valid: $VERSION_TAG"
+          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
+
+      - name: 🧪 Run full test suite
+        uses: ./.github/workflows/test-infrastructure.yml
+        with:
+          test_type: 'full'
+          keep_infrastructure: false
+        secrets: inherit
+
+  # Build release artifacts
+  build-artifacts:
+    name: 📦 Build Release Artifacts
+    runs-on: ubuntu-latest
+    needs: pre-release-validation
+    outputs:
+      artifact_name: ${{ steps.package.outputs.artifact_name }}
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Package release
+        id: package
+        run: |
+          VERSION_TAG="${{ env.VERSION_TAG }}"
+          ARTIFACT_NAME="tmux-persistent-console-${VERSION_TAG}"
+
+          echo "📦 Creating release package: $ARTIFACT_NAME"
+
+          # Create release directory
+          mkdir -p "release/$ARTIFACT_NAME"
+
+          # Copy main files
+          cp install.sh "release/$ARTIFACT_NAME/"
+          cp README.md "release/$ARTIFACT_NAME/"
+          cp LICENSE "release/$ARTIFACT_NAME/"
+
+          # Copy source files
+          cp -r src/ "release/$ARTIFACT_NAME/"
+          cp -r docs/ "release/$ARTIFACT_NAME/"
+
+          # Create installation variants
+          mkdir -p "release/$ARTIFACT_NAME/examples"
+
+          # Create Docker example
+          cat > "release/$ARTIFACT_NAME/examples/Dockerfile" << 'EOF'
+          FROM ubuntu:24.04
+
+          # Install dependencies
+          RUN apt-get update && apt-get install -y \
+              tmux \
+              curl \
+              openssh-server \
+              && rm -rf /var/lib/apt/lists/*
+
+          # Install tmux-persistent-console
+          RUN curl -sSL https://raw.githubusercontent.com/zentala/tmux-persistent-console/main/install.sh | bash
+
+          # Configure SSH
+          RUN mkdir /var/run/sshd
+          RUN echo 'root:password' | chpasswd
+          RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+
+          EXPOSE 22
+
+          CMD ["/usr/sbin/sshd", "-D"]
+          EOF
+
+          # Create Vagrant example
+          cat > "release/$ARTIFACT_NAME/examples/Vagrantfile" << 'EOF'
+          Vagrant.configure("2") do |config|
+            config.vm.box = "ubuntu/jammy64"
+            config.vm.network "private_network", type: "dhcp"
+
+            config.vm.provision "shell", inline: <<-SHELL
+              apt-get update
+              apt-get install -y tmux curl
+              curl -sSL https://raw.githubusercontent.com/zentala/tmux-persistent-console/main/install.sh | bash
+            SHELL
+          end
+          EOF
+
+          # Create installation script variants
+          mkdir -p "release/$ARTIFACT_NAME/variants"
+
+          # Offline installer (includes all files)
+          cat > "release/$ARTIFACT_NAME/variants/install-offline.sh" << 'EOF'
+          #!/bin/bash
+          # Tmux Persistent Console - Offline installer
+          # This script assumes all files are in the same directory
+
+          SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          INSTALL_DIR="$HOME/.tmux-persistent-console"
+          BIN_DIR="$HOME/bin"
+
+          echo "Installing tmux-persistent-console from local files..."
+
+          # Create directories
+          mkdir -p "$INSTALL_DIR" "$BIN_DIR"
+
+          # Copy files
+          cp "$SCRIPT_DIR/../src/"* "$INSTALL_DIR/"
+          chmod +x "$INSTALL_DIR"/*.sh
+
+          # Install tmux config
+          cp "$SCRIPT_DIR/../src/tmux.conf" "$HOME/.tmux.conf"
+
+          # Create commands
+          ln -sf "$INSTALL_DIR/setup.sh" "$BIN_DIR/setup-console-sessions"
+          ln -sf "$INSTALL_DIR/connect.sh" "$BIN_DIR/connect-console"
+          ln -sf "$INSTALL_DIR/uninstall.sh" "$BIN_DIR/uninstall-console"
+
+          # Create sessions
+          "$INSTALL_DIR/setup.sh"
+
+          echo "✅ Installation complete!"
+          EOF
+
+          chmod +x "release/$ARTIFACT_NAME/variants/install-offline.sh"
+
+          # Create checksums
+          cd release
+          find "$ARTIFACT_NAME" -type f -exec sha256sum {} \; > "$ARTIFACT_NAME.sha256"
+
+          # Create tarball
+          tar -czf "$ARTIFACT_NAME.tar.gz" "$ARTIFACT_NAME"
+
+          # Create zip
+          zip -r "$ARTIFACT_NAME.zip" "$ARTIFACT_NAME"
+
+          echo "artifact_name=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
+
+          echo "📦 Release artifacts created:"
+          echo "  - $ARTIFACT_NAME.tar.gz"
+          echo "  - $ARTIFACT_NAME.zip"
+          echo "  - $ARTIFACT_NAME.sha256"
+
+      - name: 📤 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            release/*.tar.gz
+            release/*.zip
+            release/*.sha256
+
+  # Create GitHub release
+  create-release:
+    name: 🎉 Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [pre-release-validation, build-artifacts]
+    permissions:
+      contents: write
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📥 Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: release/
+
+      - name: 📝 Generate release notes
+        id: release_notes
+        run: |
+          VERSION_TAG="${{ env.VERSION_TAG }}"
+
+          # Get previous tag for changelog
+          PREVIOUS_TAG=$(git tag --sort=-version:refname | grep -v "$VERSION_TAG" | head -n1)
+
+          echo "## 🚀 What's New in $VERSION_TAG" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+          if [ -n "$PREVIOUS_TAG" ]; then
+            echo "### 📋 Changes since $PREVIOUS_TAG" >> RELEASE_NOTES.md
+            echo "" >> RELEASE_NOTES.md
+
+            # Get commit messages between tags
+            git log "$PREVIOUS_TAG..$VERSION_TAG" --pretty=format:"- %s" --no-merges >> RELEASE_NOTES.md
+            echo "" >> RELEASE_NOTES.md
+          fi
+
+          echo "" >> RELEASE_NOTES.md
+          echo "## ✨ Features" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "- 🖥️ **7 Persistent Console Sessions** with instant Ctrl+F switching" >> RELEASE_NOTES.md
+          echo "- 🤖 **AI CLI Optimized** - Perfect for Claude Code & GitHub Copilot CLI" >> RELEASE_NOTES.md
+          echo "- 🛡️ **Crash Resistant** - Sessions survive SSH disconnects and reboots" >> RELEASE_NOTES.md
+          echo "- 🪟 **Windows Terminal Friendly** - Function keys work perfectly" >> RELEASE_NOTES.md
+          echo "- ⚡ **Zero Configuration** - Works immediately after installation" >> RELEASE_NOTES.md
+          echo "- 🌐 **Remote Access Ready** - SSH integration and documentation" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+          echo "## 🚀 Quick Installation" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "\`\`\`bash" >> RELEASE_NOTES.md
+          echo "curl -sSL https://raw.githubusercontent.com/zentala/tmux-persistent-console/$VERSION_TAG/install.sh | bash" >> RELEASE_NOTES.md
+          echo "\`\`\`" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+          echo "## 📦 Download Options" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "- **Recommended**: Use the one-liner installation above" >> RELEASE_NOTES.md
+          echo "- **Offline**: Download tar.gz/zip for offline installation" >> RELEASE_NOTES.md
+          echo "- **Docker**: Use included Dockerfile example" >> RELEASE_NOTES.md
+          echo "- **Vagrant**: Use included Vagrantfile example" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+          echo "## 🧪 Testing" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "This release includes comprehensive testing infrastructure:" >> RELEASE_NOTES.md
+          echo "- ✅ **10+ Automated Tests** validated on Oracle Cloud Free Tier" >> RELEASE_NOTES.md
+          echo "- ✅ **Interactive Testing** with 13 manual scenarios" >> RELEASE_NOTES.md
+          echo "- ✅ **CI/CD Pipeline** with GitHub Actions automation" >> RELEASE_NOTES.md
+          echo "- ✅ **Security Scanning** with Terraform validation" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+          echo "## 🎯 Perfect For" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "- 🤖 **AI CLI Users** (Claude Code, GitHub Copilot CLI)" >> RELEASE_NOTES.md
+          echo "- 🔧 **System Administrators** managing remote servers" >> RELEASE_NOTES.md
+          echo "- 🌐 **Remote Workers** with unstable connections" >> RELEASE_NOTES.md
+          echo "- 💻 **Developers** running long-running processes" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+          echo "## 🔗 Links" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "- 📖 [Documentation](https://github.com/zentala/tmux-persistent-console#readme)" >> RELEASE_NOTES.md
+          echo "- 🧪 [Testing Guide](https://github.com/zentala/tmux-persistent-console/tree/main/tests)" >> RELEASE_NOTES.md
+          echo "- 🐛 [Issues](https://github.com/zentala/tmux-persistent-console/issues)" >> RELEASE_NOTES.md
+          echo "- 💬 [Discussions](https://github.com/zentala/tmux-persistent-console/discussions)" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+          echo "---" >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "**Full Changelog**: https://github.com/zentala/tmux-persistent-console/compare/$PREVIOUS_TAG...$VERSION_TAG" >> RELEASE_NOTES.md
+
+      - name: 🎉 Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.VERSION_TAG }}
+          name: "Tmux Persistent Console ${{ env.VERSION_TAG }}"
+          body_path: RELEASE_NOTES.md
+          prerelease: ${{ github.event.inputs.prerelease || false }}
+          files: |
+            release/*.tar.gz
+            release/*.zip
+            release/*.sha256
+          generate_release_notes: false
+
+  # Post-release validation
+  post-release-validation:
+    name: ✅ Post-Release Validation
+    runs-on: ubuntu-latest
+    needs: create-release
+
+    steps:
+      - name: 📥 Checkout released version
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.VERSION_TAG }}
+
+      - name: 🧪 Test installation from release
+        run: |
+          echo "🧪 Testing installation from GitHub release..."
+
+          # Test the installation URL that users will use
+          curl -sSL "https://raw.githubusercontent.com/zentala/tmux-persistent-console/${{ env.VERSION_TAG }}/install.sh" > /tmp/install.sh
+
+          # Validate the installer
+          bash -n /tmp/install.sh
+          echo "✅ Release installer is valid"
+
+          # Test that install script can be downloaded and executed
+          # (We won't actually run it to avoid installing on CI runner)
+          if curl -sSL "https://raw.githubusercontent.com/zentala/tmux-persistent-console/${{ env.VERSION_TAG }}/install.sh" | head -5 | grep -q "tmux-persistent-console"; then
+            echo "✅ Release installer is accessible and correct"
+          else
+            echo "❌ Release installer validation failed"
+            exit 1
+          fi
+
+      - name: 📊 Release summary
+        run: |
+          echo "## 🎉 Release ${{ env.VERSION_TAG }} Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Release Assets" >> $GITHUB_STEP_SUMMARY
+          echo "- Source code (zip & tar.gz)" >> $GITHUB_STEP_SUMMARY
+          echo "- Complete package with examples" >> $GITHUB_STEP_SUMMARY
+          echo "- SHA256 checksums for verification" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Installation" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "curl -sSL https://raw.githubusercontent.com/zentala/tmux-persistent-console/${{ env.VERSION_TAG }}/install.sh | bash" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Validation" >> $GITHUB_STEP_SUMMARY
+          echo "- Pre-release testing: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- Artifact building: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- Release creation: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- Post-release validation: ✅ Passed" >> $GITHUB_STEP_SUMMARY

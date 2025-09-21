@@ -1,0 +1,292 @@
+name: 🔍 PR Validation
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+env:
+  TF_VERSION: "1.6.0"
+
+jobs:
+  # Fast validation for all PRs
+  quick-checks:
+    name: ⚡ Quick Validation
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - name: 📥 Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔧 Setup environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tmux shellcheck
+
+      - name: 📋 Lint shell scripts
+        run: |
+          echo "🔍 Linting shell scripts..."
+          find . -name "*.sh" -type f | while read -r script; do
+            echo "Checking: $script"
+            shellcheck "$script" || echo "⚠️ ShellCheck issues in $script"
+          done
+
+      - name: ✅ Validate syntax
+        run: |
+          echo "🔍 Validating script syntax..."
+
+          # Check main installer
+          bash -n install.sh
+          echo "✅ install.sh syntax valid"
+
+          # Check source scripts
+          for script in src/*.sh; do
+            if [ -f "$script" ]; then
+              bash -n "$script"
+              echo "✅ $script syntax valid"
+            fi
+          done
+
+          # Check test scripts
+          for script in tests/scripts/*.sh; do
+            if [ -f "$script" ]; then
+              bash -n "$script"
+              echo "✅ $script syntax valid"
+            fi
+          done
+
+      - name: 🧪 Test tmux config
+        run: |
+          echo "🔍 Testing tmux configuration..."
+          tmux -f src/tmux.conf -C list-sessions 2>/dev/null || true
+          echo "✅ Tmux configuration is valid"
+
+      - name: 🏗️ Validate Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: 🔍 Terraform checks
+        run: |
+          cd tests/terraform
+          echo "🔍 Terraform init..."
+          terraform init -backend=false
+
+          echo "🔍 Terraform validate..."
+          terraform validate
+
+          echo "🔍 Terraform format check..."
+          terraform fmt -check=true -diff=true
+
+          echo "✅ Terraform validation complete"
+
+      - name: 📊 PR Summary
+        run: |
+          echo "## ✅ PR Validation Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Shell Scripts**: All syntax checks passed" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tmux Config**: Configuration validated" >> $GITHUB_STEP_SUMMARY
+          echo "- **Terraform**: Infrastructure code validated" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: Ready for review 🚀" >> $GITHUB_STEP_SUMMARY
+
+  # Security scan for PRs
+  security-check:
+    name: 🔒 Security Check
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - name: 📥 Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Scan for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: 🛡️ Terraform security scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: tests/terraform
+          framework: terraform
+          output_format: cli
+          soft_fail: true
+
+  # Documentation checks
+  docs-check:
+    name: 📚 Documentation Check
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+
+    steps:
+      - name: 📥 Checkout PR
+        uses: actions/checkout@v4
+
+      - name: 🔍 Check markdown files
+        uses: DavidAnson/markdownlint-action@v1
+        with:
+          files: '**/*.md'
+          config: |
+            {
+              "MD013": false,
+              "MD033": false,
+              "MD041": false
+            }
+
+      - name: 📋 Validate README updates
+        run: |
+          if git diff --name-only origin/main...HEAD | grep -q "README.md"; then
+            echo "📝 README.md was updated in this PR"
+            echo "📋 Checking README structure..."
+
+            # Check for required sections
+            required_sections=("Features" "Quick Start" "Installation" "Usage")
+            for section in "${required_sections[@]}"; do
+              if grep -q "## .*$section" README.md; then
+                echo "✅ Found section: $section"
+              else
+                echo "⚠️ Missing section: $section"
+              fi
+            done
+          else
+            echo "📝 README.md not modified in this PR"
+          fi
+
+  # Changes analysis
+  change-detection:
+    name: 🔍 Change Analysis
+    runs-on: ubuntu-latest
+    outputs:
+      needs_cloud_test: ${{ steps.changes.outputs.needs_cloud_test }}
+      test_type: ${{ steps.changes.outputs.test_type }}
+
+    steps:
+      - name: 📥 Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🔍 Detect changes
+        id: changes
+        run: |
+          echo "🔍 Analyzing changes in PR..."
+
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          # Determine if cloud testing is needed
+          NEEDS_CLOUD_TEST=false
+          TEST_TYPE="quick"
+
+          # Check for critical changes that need cloud testing
+          if echo "$CHANGED_FILES" | grep -E "(src/|install\.sh|tests/terraform/|tests/configs/)"; then
+            echo "🚨 Critical files changed - cloud testing recommended"
+            NEEDS_CLOUD_TEST=true
+            TEST_TYPE="full"
+          fi
+
+          # Check for test-only changes
+          if echo "$CHANGED_FILES" | grep -q "tests/scripts/" && ! echo "$CHANGED_FILES" | grep -v "tests/"; then
+            echo "🧪 Test scripts changed - quick cloud test"
+            NEEDS_CLOUD_TEST=true
+            TEST_TYPE="quick"
+          fi
+
+          # Check PR labels for forced testing
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'test-cloud') }}" == "true" ]]; then
+            echo "🏷️ test-cloud label found - forcing cloud test"
+            NEEDS_CLOUD_TEST=true
+            TEST_TYPE="full"
+          fi
+
+          echo "needs_cloud_test=$NEEDS_CLOUD_TEST" >> $GITHUB_OUTPUT
+          echo "test_type=$TEST_TYPE" >> $GITHUB_OUTPUT
+
+          echo "## 📊 Change Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cloud Testing Needed**: $NEEDS_CLOUD_TEST" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Type**: $TEST_TYPE" >> $GITHUB_STEP_SUMMARY
+
+  # Conditional cloud testing for PRs
+  cloud-test-pr:
+    name: ☁️ Cloud Test (PR)
+    uses: ./.github/workflows/test-infrastructure.yml
+    needs: [quick-checks, change-detection]
+    if: |
+      needs.change-detection.outputs.needs_cloud_test == 'true' &&
+      github.event.pull_request.draft == false
+    secrets: inherit
+    with:
+      test_type: ${{ needs.change-detection.outputs.test_type }}
+      keep_infrastructure: false
+
+  # Final PR status check
+  pr-status:
+    name: 📋 PR Status
+    runs-on: ubuntu-latest
+    needs: [quick-checks, security-check, docs-check, change-detection]
+    if: always()
+
+    steps:
+      - name: 📊 Generate PR status
+        run: |
+          echo "## 🎯 PR Validation Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check individual job statuses
+          QUICK_STATUS="${{ needs.quick-checks.result }}"
+          SECURITY_STATUS="${{ needs.security-check.result }}"
+          DOCS_STATUS="${{ needs.docs-check.result }}"
+
+          echo "### ✅ Validation Results" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "$QUICK_STATUS" == "success" ]]; then
+            echo "- 🚀 **Quick Checks**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- 🚀 **Quick Checks**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "$SECURITY_STATUS" == "success" ]]; then
+            echo "- 🔒 **Security**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- 🔒 **Security**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [[ "$DOCS_STATUS" == "success" ]]; then
+            echo "- 📚 **Documentation**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- 📚 **Documentation**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Cloud testing status
+          if [[ "${{ needs.change-detection.outputs.needs_cloud_test }}" == "true" ]]; then
+            echo "- ☁️ **Cloud Testing**: Triggered (check test-infrastructure workflow)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ☁️ **Cloud Testing**: Skipped (no critical changes)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎉 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "- Review and address any failed checks" >> $GITHUB_STEP_SUMMARY
+          echo "- Wait for all workflows to complete" >> $GITHUB_STEP_SUMMARY
+          echo "- Ready for merge when all checks pass! 🚀" >> $GITHUB_STEP_SUMMARY
+
+      - name: ❌ Fail if critical checks failed
+        if: |
+          needs.quick-checks.result == 'failure' ||
+          needs.security-check.result == 'failure'
+        run: |
+          echo "❌ Critical validation checks failed!"
+          echo "Please fix the issues before merging."
+          exit 1

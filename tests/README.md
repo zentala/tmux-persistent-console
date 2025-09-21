@@ -418,3 +418,75 @@ jobs:
 ---
 
 **🎉 Happy Testing!** This infrastructure makes it easy to test tmux-persistent-console in a real cloud environment without any cost.
+
+## 🚀 GitOps CI/CD Integration
+
+### Automated Testing on Every Push
+
+Your repository now includes **professional CI/CD pipelines** that automatically test tmux-persistent-console on Oracle Cloud:
+
+#### 🔄 Workflow Types
+
+1. **🧪 Main Testing** (`.github/workflows/test-infrastructure.yml`)
+   - **Triggers**: Push to main, PR to main, manual dispatch
+   - **Features**: Full Oracle Cloud deployment + testing
+   - **Duration**: ~20 minutes
+   - **Cost**: Free (Oracle Free Tier)
+
+2. **🔍 PR Validation** (`.github/workflows/pr-validation.yml`)
+   - **Triggers**: All pull requests
+   - **Features**: Fast validation + smart cloud testing
+   - **Duration**: ~5 minutes (or ~20 min with cloud tests)
+   - **Cost**: Free
+
+3. **🚀 Release Pipeline** (`.github/workflows/release.yml`)
+   - **Triggers**: Git tags (v*.*.*)
+   - **Features**: Full validation + GitHub release creation
+   - **Duration**: ~30 minutes
+   - **Artifacts**: Ready-to-use packages
+
+### 🔧 Setup GitOps (One-Time)
+
+See **[`tests/CICD.md`](CICD.md)** for complete setup instructions:
+
+1. **Configure GitHub Secrets** (Oracle Cloud credentials)
+2. **Enable workflows** (automatic on first push)
+3. **Enjoy automated testing** on every commit! 🎉
+
+#### Quick Secret Setup
+```bash
+# Required GitHub Secrets (Repository Settings → Secrets):
+OCI_TENANCY_OCID      # Your Oracle Cloud tenancy
+OCI_USER_OCID         # Your user OCID
+OCI_FINGERPRINT       # API key fingerprint
+OCI_PRIVATE_KEY       # Private key content (PEM format)
+OCI_REGION           # Region (e.g., us-ashburn-1)
+OCI_COMPARTMENT_OCID  # Compartment OCID
+SSH_PRIVATE_KEY       # SSH private key for server access
+SSH_PUBLIC_KEY        # SSH public key for server access
+```
+
+### ⚡ Smart Testing Features
+
+- **🚀 Quick Validation**: Syntax checks, linting, security scans (always runs)
+- **☁️ Smart Cloud Testing**: Only runs when core files change
+- **🏷️ Label Control**: Add `test-cloud` label to force cloud testing on PRs
+- **🔒 Security First**: Automatic secret scanning and infrastructure validation
+- **📊 Rich Reporting**: Detailed test results in GitHub Actions summary
+
+### 🎯 Example Automated Workflow
+
+```mermaid
+graph LR
+    A[Push Code] --> B[Quick Validation]
+    B --> C{Core Files Changed?}
+    C -->|Yes| D[Deploy Oracle Cloud]
+    C -->|No| E[Skip Cloud Test]
+    D --> F[Run 10+ Tests]
+    F --> G[Generate Report]
+    G --> H[Cleanup Infrastructure]
+    E --> I[✅ PR Ready]
+    H --> I
+```
+
+**🎉 Your tmux-persistent-console now has enterprise-grade CI/CD with zero manual effort!**
