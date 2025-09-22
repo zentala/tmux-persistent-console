@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  # Test server with tmux-persistent-console
+  tmux-server:
+    build:
+      context: ../..
+      dockerfile: tests/docker/Dockerfile.server
+    container_name: tmux-test-server
+    hostname: tmux-server
+    networks:
+      - tmux-test-net
+    ports:
+      - "2222:22"  # SSH access from host
+    environment:
+      - TZ=UTC
+    volumes:
+      # Mount source for live testing (optional)
+      - ../../src:/opt/tmux-persistent-console/src:ro
+      - ../../install.sh:/opt/tmux-persistent-console/install.sh:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pgrep", "sshd"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Test client for SSH connections
+  tmux-client:
+    build:
+      context: ../..
+      dockerfile: tests/docker/Dockerfile.client
+    container_name: tmux-test-client
+    hostname: tmux-client
+    networks:
+      - tmux-test-net
+    depends_on:
+      tmux-server:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+    volumes:
+      # Mount test scripts
+      - ./test-scripts:/home/client/tests:ro
+    command: |
+      bash -c "
+        echo '⏳ Waiting for server to be fully ready...'
+        sleep 5
+        echo '✅ Server ready! Running initial tests...'
+        test-connections.sh
+        echo ''
+        echo '🎯 You can now:'
+        echo '  ssh c1      # Connect to console-1'
+        echo '  ssh menu    # Open interactive menu'
+        echo '  run-tests.sh # Run all automated tests'
+        echo ''
+        exec bash
+      "
+
+  # Optional: Second server for server-to-server testing
+  tmux-server2:
+    build:
+      context: ../..
+      dockerfile: tests/docker/Dockerfile.server
+    container_name: tmux-test-server2
+    hostname: tmux-server2
+    networks:
+      - tmux-test-net
+    ports:
+      - "2223:22"  # Different SSH port
+    environment:
+      - TZ=UTC
+    profiles:
+      - multi-server  # Only starts with --profile multi-server
+    restart: unless-stopped
+
+networks:
+  tmux-test-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/24
+
+# Volumes for persistent data (optional)
+volumes:
+  tmux-sessions:
+    driver: local

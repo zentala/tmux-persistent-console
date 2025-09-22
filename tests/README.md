@@ -490,3 +490,65 @@ graph LR
 ```
 
 **🎉 Your tmux-persistent-console now has enterprise-grade CI/CD with zero manual effort!**
+
+## 🐳 Docker Testing (Fast & Local)
+
+### Alternative to Cloud Testing
+
+For **fast local development** and testing without Oracle Cloud setup:
+
+```bash
+# Quick test (builds + tests + cleanup)
+cd tests/docker
+./test-local.sh test
+
+# Interactive testing
+./test-local.sh interactive
+```
+
+### ⚡ Super-Short SSH Commands
+
+Inside the Docker client container, use ultra-short commands:
+
+```bash
+ssh c1      # Direct to console-1 (instead of long SSH command)
+ssh c2      # Direct to console-2
+ssh c3      # Direct to console-3
+ssh menu    # Interactive console menu
+ssh dev     # Connect as devuser
+ssh root    # Admin access
+```
+
+### 🎯 Docker vs Oracle Cloud
+
+| Feature | 🐳 Docker | ☁️ Oracle Cloud |
+|---------|-----------|-----------------|
+| **Speed** | ~5 minutes | ~20 minutes |
+| **Setup** | Zero config | Cloud credentials |
+| **Use Case** | Development | Production validation |
+| **SSH Shortcuts** | ✅ Built-in | Manual setup |
+| **Multi-user** | ✅ testuser + devuser | Single user |
+
+### 📋 Complete Docker Workflow
+
+```bash
+# 1. Development cycle
+cd tests/docker
+
+# 2. Quick validation
+./test-local.sh test
+
+# 3. Interactive testing
+./test-local.sh interactive
+# Inside container: ssh c1, ssh menu, etc.
+
+# 4. Multi-server testing (optional)
+./test-local.sh start multi
+
+# 5. Cleanup
+./test-local.sh clean
+```
+
+See **[`tests/docker/README.md`](docker/README.md)** for complete Docker testing guide.
+
+**🚀 Perfect for rapid development cycles - no cloud setup needed!**

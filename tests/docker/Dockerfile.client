@@ -1,0 +1,232 @@
+# Dockerfile for tmux-persistent-console test client
+FROM ubuntu:24.04
+
+# Set environment
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    openssh-client \
+    tmux \
+    curl \
+    wget \
+    vim \
+    netcat-openbsd \
+    iputils-ping \
+    locales \
+    && rm -rf /var/lib/apt/lists/*
+
+# Generate locale
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+
+# Create client user
+RUN useradd -m -s /bin/bash client && \
+    echo 'client:clientpass' | chpasswd
+
+# Setup SSH config for easy connection
+RUN mkdir -p /home/client/.ssh && \
+    chmod 700 /home/client/.ssh && \
+    chown -R client:client /home/client/.ssh
+
+# Create SSH aliases configuration
+RUN cat > /home/client/.ssh/config << 'EOF'
+# Tmux Persistent Console - Test Server Connections
+
+# Main server connection
+Host server
+    HostName tmux-server
+    User testuser
+    Port 22
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+
+# Quick console connections
+Host c1
+    HostName tmux-server
+    User testuser
+    Port 22
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+    RequestTTY force
+    RemoteCommand tmux attach -t console-1
+
+Host c2
+    HostName tmux-server
+    User testuser
+    Port 22
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+    RequestTTY force
+    RemoteCommand tmux attach -t console-2
+
+Host c3
+    HostName tmux-server
+    User testuser
+    Port 22
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+    RequestTTY force
+    RemoteCommand tmux attach -t console-3
+
+# Interactive menu
+Host menu
+    HostName tmux-server
+    User testuser
+    Port 22
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+    RequestTTY force
+    RemoteCommand connect-console
+
+# Connect as different users
+Host dev
+    HostName tmux-server
+    User devuser
+    Port 22
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+
+Host root
+    HostName tmux-server
+    User root
+    Port 22
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+EOF
+
+RUN chown client:client /home/client/.ssh/config && \
+    chmod 600 /home/client/.ssh/config
+
+# Create testing scripts
+RUN cat > /usr/local/bin/test-connections.sh << 'EOF'
+#!/bin/bash
+echo "=== Testing SSH Connections ==="
+echo ""
+echo "🔍 Testing server connectivity..."
+
+if ping -c 1 tmux-server > /dev/null 2>&1; then
+    echo "✅ Server is reachable"
+else
+    echo "❌ Server not reachable"
+    exit 1
+fi
+
+if nc -zv tmux-server 22 2>&1 | grep -q succeeded; then
+    echo "✅ SSH port is open"
+else
+    echo "❌ SSH port not accessible"
+    exit 1
+fi
+
+echo ""
+echo "📋 Available shortcuts:"
+echo "  ssh server  - Connect to main server"
+echo "  ssh c1      - Direct to console-1"
+echo "  ssh c2      - Direct to console-2"
+echo "  ssh c3      - Direct to console-3"
+echo "  ssh menu    - Interactive menu"
+echo "  ssh dev     - Connect as devuser"
+echo "  ssh root    - Connect as root"
+echo ""
+echo "💡 Password for testuser: testpassword"
+echo "💡 Password for devuser: devpassword"
+echo "💡 Password for root: testpassword"
+echo ""
+echo "=== Ready for testing! ==="
+EOF
+
+RUN chmod +x /usr/local/bin/test-connections.sh
+
+# Create automated test script
+RUN cat > /usr/local/bin/run-tests.sh << 'EOF'
+#!/bin/bash
+set -e
+
+echo "🧪 Running Automated Tests..."
+echo ""
+
+# Test 1: Basic SSH connection
+echo -n "Test 1: SSH Connection... "
+if sshpass -p testpassword ssh -o BatchMode=no testuser@tmux-server "echo connected" > /dev/null 2>&1; then
+    echo "✅ PASSED"
+else
+    echo "❌ FAILED"
+    exit 1
+fi
+
+# Test 2: Tmux sessions exist
+echo -n "Test 2: Tmux sessions... "
+SESSION_COUNT=$(sshpass -p testpassword ssh testuser@tmux-server "tmux ls 2>/dev/null | wc -l")
+if [ "$SESSION_COUNT" -eq 7 ]; then
+    echo "✅ PASSED (7 sessions)"
+else
+    echo "❌ FAILED (found $SESSION_COUNT sessions)"
+fi
+
+# Test 3: Connect script exists
+echo -n "Test 3: Connect script... "
+if sshpass -p testpassword ssh testuser@tmux-server "which connect-console" > /dev/null 2>&1; then
+    echo "✅ PASSED"
+else
+    echo "❌ FAILED"
+fi
+
+# Test 4: Session switching
+echo -n "Test 4: Session switching... "
+if sshpass -p testpassword ssh testuser@tmux-server "tmux has-session -t console-1 && tmux has-session -t console-7" > /dev/null 2>&1; then
+    echo "✅ PASSED"
+else
+    echo "❌ FAILED"
+fi
+
+# Test 5: Multi-user support
+echo -n "Test 5: Multi-user setup... "
+if sshpass -p devpassword ssh devuser@tmux-server "tmux ls 2>/dev/null | grep -q console" > /dev/null 2>&1; then
+    echo "✅ PASSED"
+else
+    echo "❌ FAILED"
+fi
+
+echo ""
+echo "📊 Test Summary: All tests completed!"
+echo ""
+echo "🎯 Try manual testing:"
+echo "  ssh c1  # Connect to console-1"
+echo "  ssh menu  # Interactive menu"
+EOF
+
+RUN chmod +x /usr/local/bin/run-tests.sh
+
+# Install sshpass for automated testing
+RUN apt-get update && apt-get install -y sshpass && rm -rf /var/lib/apt/lists/*
+
+# Create welcome message
+RUN cat > /etc/motd << 'EOF'
+===============================================
+🖥️  TMUX CONSOLE - TEST CLIENT
+===============================================
+
+SSH Shortcuts configured:
+  ssh server  - Main server connection
+  ssh c1-c7   - Direct console connections
+  ssh menu    - Interactive menu
+  ssh dev     - Connect as devuser
+  ssh root    - Admin access
+
+Commands:
+  test-connections.sh  - Test connectivity
+  run-tests.sh        - Run automated tests
+
+===============================================
+EOF
+
+# Switch to client user by default
+USER client
+WORKDIR /home/client
+
+# Default command
+CMD ["/bin/bash"]

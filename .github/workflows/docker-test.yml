@@ -1,0 +1,213 @@
+name: 🐳 Docker Testing
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/**'
+      - 'install.sh'
+      - 'tests/docker/**'
+      - '.github/workflows/docker-test.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'install.sh'
+      - 'tests/docker/**'
+  workflow_dispatch:
+
+jobs:
+  docker-test:
+    name: 🧪 Docker-based Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔨 Build test images
+        run: |
+          cd tests/docker
+          docker-compose build --parallel
+
+      - name: 🚀 Start test environment
+        run: |
+          cd tests/docker
+          docker-compose up -d
+
+          echo "⏳ Waiting for services to be ready..."
+          sleep 10
+
+          # Check containers are running
+          docker-compose ps
+
+      - name: ✅ Verify server health
+        run: |
+          echo "🔍 Checking server container health..."
+          docker exec tmux-test-server test-console.sh
+
+      - name: 🧪 Run automated tests
+        id: tests
+        run: |
+          echo "🧪 Running automated test suite..."
+
+          # Run tests in client container
+          if docker exec tmux-test-client run-tests.sh; then
+            echo "✅ Client tests passed"
+          else
+            echo "❌ Client tests failed"
+            echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Test from host
+          echo ""
+          echo "🧪 Testing from host..."
+
+          # Install sshpass for testing
+          sudo apt-get update && sudo apt-get install -y sshpass
+
+          # Test SSH connection
+          echo -n "Test: SSH connection... "
+          if sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "echo ok" > /dev/null 2>&1; then
+            echo "✅ PASSED"
+          else
+            echo "❌ FAILED"
+            echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Test tmux sessions
+          echo -n "Test: Tmux sessions... "
+          SESSION_COUNT=$(sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux ls 2>/dev/null | wc -l")
+          if [ "$SESSION_COUNT" -eq 7 ]; then
+            echo "✅ PASSED (7 sessions)"
+          else
+            echo "❌ FAILED (found $SESSION_COUNT sessions)"
+            echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Test multi-user
+          echo -n "Test: Multi-user support... "
+          if sshpass -p devpassword ssh -p 2222 -o StrictHostKeyChecking=no devuser@localhost "tmux ls" > /dev/null 2>&1; then
+            echo "✅ PASSED"
+          else
+            echo "❌ FAILED"
+            echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 🔍 Test SSH shortcuts
+        run: |
+          echo "🔍 Testing SSH configuration shortcuts..."
+
+          # Test that shortcuts work
+          docker exec tmux-test-client bash -c "
+            echo '🧪 Testing SSH shortcuts...'
+
+            # Test connection shortcuts
+            ssh -o BatchMode=yes -o ConnectTimeout=5 server 'exit 0' 2>/dev/null || echo '⚠️ Need password for server connection'
+
+            # List available shortcuts
+            echo ''
+            echo '📋 Configured shortcuts in client:'
+            grep '^Host' /home/client/.ssh/config | grep -v '*' | sed 's/Host/  ssh/g'
+          "
+
+      - name: 📊 Generate test report
+        if: always()
+        run: |
+          echo "## 🐳 Docker Test Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Environment" >> $GITHUB_STEP_SUMMARY
+          echo "- **Server Container**: tmux-test-server" >> $GITHUB_STEP_SUMMARY
+          echo "- **Client Container**: tmux-test-client" >> $GITHUB_STEP_SUMMARY
+          echo "- **Network**: Docker bridge (172.25.0.0/24)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.tests.outputs.TESTS_FAILED }}" = "true" ]; then
+            echo "### ❌ Status: Tests Failed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ✅ Status: All Tests Passed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔧 Container Logs" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          docker-compose -f tests/docker/docker-compose.yml logs --tail=20 >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🧹 Cleanup
+        if: always()
+        run: |
+          cd tests/docker
+          docker-compose down -v
+          echo "✅ Docker cleanup complete"
+
+      - name: ❌ Fail if tests failed
+        if: steps.tests.outputs.TESTS_FAILED == 'true'
+        run: |
+          echo "❌ Docker tests failed!"
+          exit 1
+
+  docker-multi-server:
+    name: 🌐 Multi-Server Docker Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'test-multi')
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🚀 Start multi-server environment
+        run: |
+          cd tests/docker
+          docker-compose --profile multi-server up -d
+
+          echo "⏳ Waiting for all servers..."
+          sleep 15
+
+          docker-compose ps
+
+      - name: 🧪 Test server-to-server connections
+        run: |
+          echo "🧪 Testing multi-server setup..."
+
+          # Install sshpass
+          sudo apt-get update && sudo apt-get install -y sshpass
+
+          # Test both servers
+          echo "Testing Server 1 (port 2222)..."
+          sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux ls"
+
+          echo ""
+          echo "Testing Server 2 (port 2223)..."
+          sshpass -p testpassword ssh -p 2223 -o StrictHostKeyChecking=no testuser@localhost "tmux ls"
+
+          # Test cross-server connection (from server1 to server2)
+          echo ""
+          echo "Testing cross-server SSH..."
+          docker exec tmux-test-server bash -c "
+            apt-get update && apt-get install -y sshpass
+            sshpass -p testpassword ssh -o StrictHostKeyChecking=no testuser@tmux-server2 'tmux ls'
+          "
+
+      - name: 📊 Multi-server report
+        if: always()
+        run: |
+          echo "## 🌐 Multi-Server Test Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Server 1**: Port 2222" >> $GITHUB_STEP_SUMMARY
+          echo "- **Server 2**: Port 2223" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cross-server SSH**: Tested" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🧹 Cleanup
+        if: always()
+        run: |
+          cd tests/docker
+          docker-compose --profile multi-server down -v

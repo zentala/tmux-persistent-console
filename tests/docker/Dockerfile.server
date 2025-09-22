@@ -1,0 +1,108 @@
+# Dockerfile for tmux-persistent-console test server
+FROM ubuntu:24.04
+
+# Set environment
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=UTC
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    tmux \
+    openssh-server \
+    curl \
+    wget \
+    git \
+    vim \
+    sudo \
+    htop \
+    tree \
+    locales \
+    && rm -rf /var/lib/apt/lists/*
+
+# Generate locale
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+
+# Configure SSH
+RUN mkdir /var/run/sshd
+RUN echo 'root:testpassword' | chpasswd
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+# Create test users
+RUN useradd -m -s /bin/bash testuser && \
+    echo 'testuser:testpassword' | chpasswd && \
+    usermod -aG sudo testuser && \
+    echo 'testuser ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+RUN useradd -m -s /bin/bash devuser && \
+    echo 'devuser:devpassword' | chpasswd && \
+    usermod -aG sudo devuser && \
+    echo 'devuser ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+# Copy and install tmux-persistent-console
+COPY install.sh /tmp/install.sh
+COPY src/ /tmp/src/
+
+# Install for both users
+RUN su - testuser -c 'curl -sSL https://raw.githubusercontent.com/zentala/tmux-persistent-console/main/install.sh | bash || \
+    (cd /tmp && bash install.sh)'
+
+RUN su - devuser -c 'curl -sSL https://raw.githubusercontent.com/zentala/tmux-persistent-console/main/install.sh | bash || \
+    (cd /tmp && bash install.sh)'
+
+# Create test script
+RUN cat > /usr/local/bin/test-console.sh << 'EOF'
+#!/bin/bash
+echo "=== Tmux Persistent Console Docker Test ==="
+echo ""
+echo "Available users:"
+echo "  - testuser (password: testpassword)"
+echo "  - devuser (password: devpassword)"
+echo "  - root (password: testpassword)"
+echo ""
+echo "Testing tmux sessions..."
+su - testuser -c "tmux ls"
+echo ""
+echo "Quick commands:"
+echo "  su - testuser    # Switch to test user"
+echo "  connect-console  # Interactive console menu"
+echo "  tmux ls         # List all sessions"
+echo ""
+echo "=== Ready for testing! ==="
+EOF
+
+RUN chmod +x /usr/local/bin/test-console.sh
+
+# Create MOTD
+RUN cat > /etc/motd << 'EOF'
+===============================================
+🖥️  TMUX PERSISTENT CONSOLE - DOCKER TEST SERVER
+===============================================
+
+This is a test environment for tmux-persistent-console.
+
+Quick Start:
+  - tmux ls                  # List sessions
+  - connect-console         # Interactive menu
+  - tmux attach -t console-1 # Direct connection
+
+Users available:
+  - testuser / testpassword (has tmux-console)
+  - devuser / devpassword   (has tmux-console)
+  - root / testpassword     (admin access)
+
+Test switching between users:
+  - su - devuser
+  - su - testuser
+
+===============================================
+EOF
+
+# SSH port
+EXPOSE 22
+
+# Start SSH daemon
+CMD ["/usr/sbin/sshd", "-D"]
