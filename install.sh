@@ -92,6 +92,12 @@ cat > "$BIN_DIR/connect-console" << 'EOF'
 exec ~/.tmux-persistent-console/connect.sh "$@"
 EOF
 
+# Create console help command
+cat > "$BIN_DIR/console-help" << 'EOF'
+#!/bin/bash
+exec ~/.tmux-persistent-console/console-help.sh "$@"
+EOF
+
 # Create uninstall command
 cat > "$BIN_DIR/uninstall-console" << 'EOF'
 #!/bin/bash

@@ -96,20 +96,26 @@ ssh user@server -t "tmux attach -t console-1"
 ## 📖 Key Bindings Reference
 
 ### 🚀 Function Keys (Instant Access)
-| Key | Action |
-|-----|--------|
-| `Ctrl+F1` | Switch to console-1 |
-| `Ctrl+F2` | Switch to console-2 |
-| `Ctrl+F3` | Switch to console-3 |
-| `Ctrl+F4` | Switch to console-4 |
-| `Ctrl+F5` | Switch to console-5 |
-| `Ctrl+F6` | Switch to console-6 |
-| `Ctrl+F7` | Switch to console-7 |
-| `Ctrl+F8` | Disconnect (detach) |
-| `Ctrl+F9` | Toggle last session |
-| `Ctrl+F10` | Previous session |
-| `Ctrl+F11` | Next session |
-| `Ctrl+F12` | Show all sessions list |
+| Key | Action | Purpose |
+|-----|--------|---------|
+| `Ctrl+F1` | 🤖 Console-1 | Claude Code / AI Development |
+| `Ctrl+F2` | 🎪 Console-2 | GitHub Copilot CLI |
+| `Ctrl+F3` | 💻 Console-3 | General Development |
+| `Ctrl+F4` | 🧪 Console-4 | Testing & QA |
+| `Ctrl+F5` | 📊 Console-5 | Monitoring & Logs |
+| `Ctrl+F6` | 🌐 Console-6 | Git & Deployment |
+| `Ctrl+F7` | 🔧 Console-7 | System Administration |
+| `Ctrl+F8` | 🚪 Disconnect | Safely detach session |
+| `Ctrl+F9` | 🔄 Toggle last | Switch to previous session |
+| `Ctrl+F10` | ⬅️ Previous | Navigate sessions |
+| `Ctrl+F11` | ➡️ Next | Navigate sessions |
+| `Ctrl+F12` | 📋 **Help Menu** | **First-time user guide!** |
+
+### ⚡ Additional Features
+| Key | Action | Purpose |
+|-----|--------|---------|
+| `Ctrl+Alt+R` | 🔄 Reset Terminal | Clear & refresh current terminal |
+| `console-help` | 📖 Help Menu | Access advanced help anytime |
 
 ### 🔄 Backup Method (Traditional)
 | Key | Action |

@@ -32,18 +32,18 @@ jobs:
       - name: 🔨 Build test images
         run: |
           cd tests/docker
-          docker-compose build --parallel
+          docker compose build --parallel
 
       - name: 🚀 Start test environment
         run: |
           cd tests/docker
-          docker-compose up -d
+          docker compose up -d
 
           echo "⏳ Waiting for services to be ready..."
           sleep 10
 
           # Check containers are running
-          docker-compose ps
+          docker compose ps
 
       - name: ✅ Verify server health
         run: |
@@ -135,14 +135,14 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔧 Container Logs" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          docker-compose -f tests/docker/docker-compose.yml logs --tail=20 >> $GITHUB_STEP_SUMMARY
+          docker compose -f tests/docker/docker-compose.yml logs --tail=20 >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
       - name: 🧹 Cleanup
         if: always()
         run: |
           cd tests/docker
-          docker-compose down -v
+          docker compose down -v
           echo "✅ Docker cleanup complete"
 
       - name: ❌ Fail if tests failed
@@ -167,12 +167,12 @@ jobs:
       - name: 🚀 Start multi-server environment
         run: |
           cd tests/docker
-          docker-compose --profile multi-server up -d
+          docker compose --profile multi-server up -d
 
           echo "⏳ Waiting for all servers..."
           sleep 15
 
-          docker-compose ps
+          docker compose ps
 
       - name: 🧪 Test server-to-server connections
         run: |
@@ -210,4 +210,4 @@ jobs:
         if: always()
         run: |
           cd tests/docker
-          docker-compose --profile multi-server down -v
+          docker compose --profile multi-server down -v
