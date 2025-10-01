@@ -284,30 +284,37 @@ main_menu() {
         case "$choice" in
             1|"console-1"|"c1")
                 tmux switch-client -t console-1
+                tmux kill-window -t "🔧Help"
                 break
                 ;;
             2|"console-2"|"c2")
                 tmux switch-client -t console-2
+                tmux kill-window -t "🔧Help"
                 break
                 ;;
             3|"console-3"|"c3")
                 tmux switch-client -t console-3
+                tmux kill-window -t "🔧Help"
                 break
                 ;;
             4|"console-4"|"c4")
                 tmux switch-client -t console-4
+                tmux kill-window -t "🔧Help"
                 break
                 ;;
             5|"console-5"|"c5")
                 tmux switch-client -t console-5
+                tmux kill-window -t "🔧Help"
                 break
                 ;;
             6|"console-6"|"c6")
                 tmux switch-client -t console-6
+                tmux kill-window -t "🔧Help"
                 break
                 ;;
             7|"console-7"|"c7")
                 tmux switch-client -t console-7
+                tmux kill-window -t "🔧Help"
                 break
                 ;;
             r|"reset")
@@ -330,6 +337,7 @@ main_menu() {
                 show_detailed_help
                 ;;
             q|"quit"|"exit")
+                tmux kill-window -t "🔧Help"
                 break
                 ;;
             "")
