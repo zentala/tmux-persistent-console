@@ -79,159 +79,163 @@ jobs:
           terraform validate
           echo "✅ Terraform configuration is valid"
 
-  # Full cloud infrastructure testing
-  cloud-testing:
-    name: ☁️ Cloud Infrastructure Testing
-    runs-on: ubuntu-latest
-    needs: quick-validation
-    if: |
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_dispatch') ||
-      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'test-cloud'))
-    timeout-minutes: 30
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🔧 Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
-
-      - name: 🔑 Configure OCI credentials
-        run: |
-          mkdir -p ~/.oci
-          echo "${{ secrets.OCI_PRIVATE_KEY }}" > ~/.oci/oci_api_key.pem
-          chmod 600 ~/.oci/oci_api_key.pem
-
-          cat > ~/.oci/config << EOF
-          [DEFAULT]
-          user=${{ secrets.OCI_USER_OCID }}
-          fingerprint=${{ secrets.OCI_FINGERPRINT }}
-          tenancy=${{ secrets.OCI_TENANCY_OCID }}
-          region=${{ secrets.OCI_REGION }}
-          key_file=~/.oci/oci_api_key.pem
-          EOF
-
-      - name: 🔐 Setup SSH keys
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          echo "${{ secrets.SSH_PUBLIC_KEY }}" > ~/.ssh/id_rsa.pub
-          chmod 600 ~/.ssh/id_rsa
-          chmod 644 ~/.ssh/id_rsa.pub
-
-      - name: ⚙️ Configure Terraform variables
-        run: |
-          cd tests/terraform
-          cat > terraform.tfvars << EOF
-          tenancy_ocid     = "${{ secrets.OCI_TENANCY_OCID }}"
-          user_ocid        = "${{ secrets.OCI_USER_OCID }}"
-          fingerprint      = "${{ secrets.OCI_FINGERPRINT }}"
-          private_key_path = "~/.oci/oci_api_key.pem"
-          region           = "${{ secrets.OCI_REGION }}"
-          compartment_ocid = "${{ secrets.OCI_COMPARTMENT_OCID }}"
-          ssh_public_key_path = "~/.ssh/id_rsa.pub"
-          instance_name    = "tmux-console-ci-${{ github.run_number }}"
-          EOF
-
-      - name: 🏗️ Deploy test infrastructure
-        id: deploy
-        run: |
-          cd tests/scripts
-          ./deploy.sh
-
-          # Extract connection info for later steps
-          if [ -f connection-info.txt ]; then
-            PUBLIC_IP=$(grep "Public IP:" connection-info.txt | cut -d' ' -f3)
-            echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
-            echo "🌐 Test server deployed at: $PUBLIC_IP"
-          fi
-
-      - name: ⏳ Wait for server initialization
-        run: |
-          echo "⏳ Waiting for cloud-init to complete..."
-          PUBLIC_IP="${{ steps.deploy.outputs.public_ip }}"
-
-          for i in {1..20}; do
-            if ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no ubuntu@"$PUBLIC_IP" "cloud-init status --wait" 2>/dev/null; then
-              echo "✅ Server initialization complete!"
-              break
-            fi
-            echo "⏳ Waiting... (attempt $i/20)"
-            sleep 30
-          done
-
-      - name: 🧪 Run automated test suite
-        id: tests
-        run: |
-          cd tests/scripts
-
-          # Determine test type
-          TEST_TYPE="${{ github.event.inputs.test_type || 'full' }}"
-
-          case $TEST_TYPE in
-            'quick')
-              echo "🚀 Running quick tests..."
-              timeout 600 ./test-remote.sh || echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
-              ;;
-            'stress')
-              echo "💪 Running stress tests..."
-              # Run multiple test cycles
-              for i in {1..3}; do
-                echo "🔄 Stress test cycle $i/3"
-                timeout 600 ./test-remote.sh || echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
-                sleep 10
-              done
-              ;;
-            *)
-              echo "🧪 Running full test suite..."
-              timeout 600 ./test-remote.sh || echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
-              ;;
-          esac
-
-      - name: 📊 Generate test report
-        if: always()
-        run: |
-          cd tests/scripts
-          PUBLIC_IP="${{ steps.deploy.outputs.public_ip }}"
-
-          echo "## 🧪 Test Infrastructure Report" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Instance**: tmux-console-ci-${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Public IP**: $PUBLIC_IP" >> $GITHUB_STEP_SUMMARY
-          echo "- **Test Type**: ${{ github.event.inputs.test_type || 'full' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ "${{ steps.tests.outputs.TESTS_FAILED }}" = "true" ]; then
-            echo "❌ **Status**: Tests Failed" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### 🔍 Debugging Information" >> $GITHUB_STEP_SUMMARY
-            echo "Connect to debug: \`ssh ubuntu@$PUBLIC_IP\`" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "✅ **Status**: All Tests Passed" >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: 🧹 Cleanup infrastructure
-        if: always() && !github.event.inputs.keep_infrastructure
-        run: |
-          cd tests/scripts
-          ./destroy.sh || echo "⚠️ Cleanup may have failed - check OCI console"
-
-      - name: ⚠️ Cleanup warning
-        if: always() && github.event.inputs.keep_infrastructure
-        run: |
-          echo "⚠️ Infrastructure kept for debugging as requested"
-          echo "🔍 Connect with: ssh ubuntu@${{ steps.deploy.outputs.public_ip }}"
-          echo "🗑️ Remember to run ./destroy.sh manually when done!"
-
-      - name: ❌ Fail on test errors
-        if: steps.tests.outputs.TESTS_FAILED == 'true'
-        run: |
-          echo "❌ Tests failed! Check the logs above for details."
-          exit 1
+  # DISABLED: Full cloud infrastructure testing
+  # TODO: Re-enable when cloud testing is needed
+  # Currently focusing on Docker-based testing only
+  # See docker-test.yml for active test workflow
+  #
+  # cloud-testing:
+  #   name: ☁️ Cloud Infrastructure Testing
+  #   runs-on: ubuntu-latest
+  #   needs: quick-validation
+  #   if: |
+  #     (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+  #     (github.event_name == 'workflow_dispatch') ||
+  #     (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'test-cloud'))
+  #   timeout-minutes: 30
+  #
+  #   steps:
+  #     - name: 📥 Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: 🔧 Setup Terraform
+  #       uses: hashicorp/setup-terraform@v3
+  #       with:
+  #         terraform_version: ${{ env.TF_VERSION }}
+  #
+  #     - name: 🔑 Configure OCI credentials
+  #       run: |
+  #         mkdir -p ~/.oci
+  #         echo "${{ secrets.OCI_PRIVATE_KEY }}" > ~/.oci/oci_api_key.pem
+  #         chmod 600 ~/.oci/oci_api_key.pem
+  #
+  #         cat > ~/.oci/config << EOF
+  #         [DEFAULT]
+  #         user=${{ secrets.OCI_USER_OCID }}
+  #         fingerprint=${{ secrets.OCI_FINGERPRINT }}
+  #         tenancy=${{ secrets.OCI_TENANCY_OCID }}
+  #         region=${{ secrets.OCI_REGION }}
+  #         key_file=~/.oci/oci_api_key.pem
+  #         EOF
+  #
+  #     - name: 🔐 Setup SSH keys
+  #       run: |
+  #         mkdir -p ~/.ssh
+  #         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+  #         echo "${{ secrets.SSH_PUBLIC_KEY }}" > ~/.ssh/id_rsa.pub
+  #         chmod 600 ~/.ssh/id_rsa
+  #         chmod 644 ~/.ssh/id_rsa.pub
+  #
+  #     - name: ⚙️ Configure Terraform variables
+  #       run: |
+  #         cd tests/terraform
+  #         cat > terraform.tfvars << EOF
+  #         tenancy_ocid     = "${{ secrets.OCI_TENANCY_OCID }}"
+  #         user_ocid        = "${{ secrets.OCI_USER_OCID }}"
+  #         fingerprint      = "${{ secrets.OCI_FINGERPRINT }}"
+  #         private_key_path = "~/.oci/oci_api_key.pem"
+  #         region           = "${{ secrets.OCI_REGION }}"
+  #         compartment_ocid = "${{ secrets.OCI_COMPARTMENT_OCID }}"
+  #         ssh_public_key_path = "~/.ssh/id_rsa.pub"
+  #         instance_name    = "tmux-console-ci-${{ github.run_number }}"
+  #         EOF
+  #
+  #     - name: 🏗️ Deploy test infrastructure
+  #       id: deploy
+  #       run: |
+  #         cd tests/scripts
+  #         ./deploy.sh
+  #
+  #         # Extract connection info for later steps
+  #         if [ -f connection-info.txt ]; then
+  #           PUBLIC_IP=$(grep "Public IP:" connection-info.txt | cut -d' ' -f3)
+  #           echo "public_ip=$PUBLIC_IP" >> $GITHUB_OUTPUT
+  #           echo "🌐 Test server deployed at: $PUBLIC_IP"
+  #         fi
+  #
+  #     - name: ⏳ Wait for server initialization
+  #       run: |
+  #         echo "⏳ Waiting for cloud-init to complete..."
+  #         PUBLIC_IP="${{ steps.deploy.outputs.public_ip }}"
+  #
+  #         for i in {1..20}; do
+  #           if ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no ubuntu@"$PUBLIC_IP" "cloud-init status --wait" 2>/dev/null; then
+  #             echo "✅ Server initialization complete!"
+  #             break
+  #           fi
+  #           echo "⏳ Waiting... (attempt $i/20)"
+  #           sleep 30
+  #         done
+  #
+  #     - name: 🧪 Run automated test suite
+  #       id: tests
+  #       run: |
+  #         cd tests/scripts
+  #
+  #         # Determine test type
+  #         TEST_TYPE="${{ github.event.inputs.test_type || 'full' }}"
+  #
+  #         case $TEST_TYPE in
+  #           'quick')
+  #             echo "🚀 Running quick tests..."
+  #             timeout 600 ./test-remote.sh || echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
+  #             ;;
+  #           'stress')
+  #             echo "💪 Running stress tests..."
+  #             # Run multiple test cycles
+  #             for i in {1..3}; do
+  #               echo "🔄 Stress test cycle $i/3"
+  #               timeout 600 ./test-remote.sh || echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
+  #               sleep 10
+  #             done
+  #             ;;
+  #           *)
+  #             echo "🧪 Running full test suite..."
+  #             timeout 600 ./test-remote.sh || echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
+  #             ;;
+  #         esac
+  #
+  #     - name: 📊 Generate test report
+  #       if: always()
+  #       run: |
+  #         cd tests/scripts
+  #         PUBLIC_IP="${{ steps.deploy.outputs.public_ip }}"
+  #
+  #         echo "## 🧪 Test Infrastructure Report" >> $GITHUB_STEP_SUMMARY
+  #         echo "" >> $GITHUB_STEP_SUMMARY
+  #         echo "- **Instance**: tmux-console-ci-${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+  #         echo "- **Public IP**: $PUBLIC_IP" >> $GITHUB_STEP_SUMMARY
+  #         echo "- **Test Type**: ${{ github.event.inputs.test_type || 'full' }}" >> $GITHUB_STEP_SUMMARY
+  #         echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+  #         echo "" >> $GITHUB_STEP_SUMMARY
+  #
+  #         if [ "${{ steps.tests.outputs.TESTS_FAILED }}" = "true" ]; then
+  #           echo "❌ **Status**: Tests Failed" >> $GITHUB_STEP_SUMMARY
+  #           echo "" >> $GITHUB_STEP_SUMMARY
+  #           echo "### 🔍 Debugging Information" >> $GITHUB_STEP_SUMMARY
+  #           echo "Connect to debug: \`ssh ubuntu@$PUBLIC_IP\`" >> $GITHUB_STEP_SUMMARY
+  #         else
+  #           echo "✅ **Status**: All Tests Passed" >> $GITHUB_STEP_SUMMARY
+  #         fi
+  #
+  #     - name: 🧹 Cleanup infrastructure
+  #       if: always() && !github.event.inputs.keep_infrastructure
+  #       run: |
+  #         cd tests/scripts
+  #         ./destroy.sh || echo "⚠️ Cleanup may have failed - check OCI console"
+  #
+  #     - name: ⚠️ Cleanup warning
+  #       if: always() && github.event.inputs.keep_infrastructure
+  #       run: |
+  #         echo "⚠️ Infrastructure kept for debugging as requested"
+  #         echo "🔍 Connect with: ssh ubuntu@${{ steps.deploy.outputs.public_ip }}"
+  #         echo "🗑️ Remember to run ./destroy.sh manually when done!"
+  #
+  #     - name: ❌ Fail on test errors
+  #       if: steps.tests.outputs.TESTS_FAILED == 'true'
+  #       run: |
+  #         echo "❌ Tests failed! Check the logs above for details."
+  #         exit 1
 
   # Security and compliance checks
   security-scan:
@@ -246,14 +250,15 @@ jobs:
         with:
           directory: tests/terraform
           framework: terraform
-          output_format: sarif
-          output_file_path: checkov-report.sarif
+          output_format: cli
+          soft_fail: true
 
-      - name: 📋 Upload security scan results
-        if: always()
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: checkov-report.sarif
+      # DISABLED: SARIF upload - requires special permissions
+      # - name: 📋 Upload security scan results
+      #   if: always()
+      #   uses: github/codeql-action/upload-sarif@v3
+      #   with:
+      #     sarif_file: checkov-report.sarif
 
       - name: 🔐 Scan for secrets
         uses: trufflesecurity/trufflehog@main

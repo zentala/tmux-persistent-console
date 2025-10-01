@@ -25,32 +25,40 @@
 
 ---
 
-### 2. Add Docker-based Testing Infrastructure
-**Status**: Not started
+### 2. ~~Add Docker-based Testing Infrastructure~~ ✅ COMPLETED
+**Status**: ✅ Completed (Commit: 85323cc)
 
 **Goal**: Automated testing with real SSH connections
 
-**Requirements**:
-- [ ] Docker Compose setup with 2-3 containers
-- [ ] Container 1: Main server with tmux sessions
-- [ ] Container 2: SSH client for testing connections
-- [ ] Optional Container 3: Additional client for multi-user testing
-- [ ] Automated test suite for CLI commands
-- [ ] CI/CD integration (GitHub Actions)
+**Completed**:
+- ✅ Docker Compose setup with 2-3 containers
+- ✅ Container 1: Main server with tmux sessions
+- ✅ Container 2: SSH client for testing connections
+- ✅ Optional Container 3: Additional client for multi-user testing (multi-server profile)
+- ✅ Automated test suite for CLI commands
+- ✅ CI/CD integration (GitHub Actions - docker-test.yml)
 
-**Test Scenarios**:
-- SSH connection and tmux attach
-- Function key bindings (Ctrl+F1-F12)
-- Session persistence across disconnects
-- Multi-client scenarios
-- Auto-start with systemd
+**Test Scenarios Covered**:
+- ✅ SSH connection and tmux attach
+- ✅ Function key bindings (Ctrl+F1-F12)
+- ✅ Session persistence across disconnects
+- ✅ Multi-client scenarios
+- ✅ Auto-start verification
 
-**Files to Create**:
-- `tests/docker-compose.yml`
-- `tests/Dockerfile.server`
-- `tests/Dockerfile.client`
-- `tests/test-suite.sh`
-- `.github/workflows/test.yml`
+**Files Created**:
+- ✅ `tests/docker/docker-compose.yml`
+- ✅ `tests/docker/Dockerfile.server`
+- ✅ `tests/docker/Dockerfile.client`
+- ✅ `tests/docker/test-local.sh`
+- ✅ `.github/workflows/docker-test.yml`
+
+**Usage**:
+```bash
+cd tests/docker
+./test-local.sh test              # Run all tests
+./test-local.sh interactive       # Interactive testing
+./test-local.sh start             # Start environment
+```
 
 ---
 
@@ -125,20 +133,51 @@ console() {
 
 ---
 
+### 4. Cloud-based Testing Infrastructure (OCI)
+**Status**: Deferred (Cloud testing disabled)
+
+**Goal**: Automated testing on real cloud infrastructure (Oracle Cloud)
+
+**Current State**:
+- ✅ Terraform configuration ready (`tests/terraform/`)
+- ✅ Cloud-init setup (`tests/configs/cloud-init.yaml`)
+- ✅ Deployment scripts (`tests/scripts/deploy.sh`, `destroy.sh`)
+- ⚠️ Workflow disabled (`.github/workflows/test-infrastructure.yml` - commented out)
+
+**Why Deferred**:
+- Docker-based testing covers most scenarios
+- Cloud testing has permission issues with GitHub Actions (SARIF upload)
+- Cloud resources cost money (even with free tier)
+- Docker tests are faster and more reliable for CI/CD
+
+**To Re-enable Later**:
+1. Uncomment `cloud-testing` job in `test-infrastructure.yml`
+2. Uncomment `cloud-test-pr` job in `pr-validation.yml`
+3. Configure GitHub secrets for OCI credentials
+4. Fix SARIF upload permissions or remove sarif output
+
+**Use Cases for Cloud Testing**:
+- Testing on ARM architecture (OCI free tier uses ARM)
+- Testing systemd service integration
+- Load testing with real network conditions
+- Multi-region deployment validation
+
+---
+
 ## 🟡 MEDIUM Priority
 
-### 4. Enhanced Documentation
+### 5. Enhanced Documentation
 - [ ] Add animated GIFs/screenshots of F12 menu
 - [ ] Video tutorial for setup
 - [ ] Common workflow examples
 - [ ] Troubleshooting guide expansion
 
-### 5. Windows Terminal Integration
+### 6. Windows Terminal Integration
 - [ ] Pre-made profiles JSON
 - [ ] One-click profile import
 - [ ] Icon customization guide
 
-### 6. Session Customization
+### 7. Session Customization
 - [ ] Per-session custom commands on startup
 - [ ] Session-specific color schemes
 - [ ] Custom session names/labels
@@ -147,12 +186,12 @@ console() {
 
 ## 🟢 LOW Priority
 
-### 7. Plugin System
+### 8. Plugin System
 - [ ] Support for tmux plugins (TPM)
 - [ ] Custom key binding extensions
 - [ ] Session templates
 
-### 8. Monitoring Dashboard
+### 9. Monitoring Dashboard
 - [ ] Show active sessions
 - [ ] CPU/Memory usage per session
 - [ ] Last activity timestamps

@@ -119,6 +119,7 @@ jobs:
           framework: terraform
           output_format: cli
           soft_fail: true
+          log_level: WARNING
 
   # Documentation checks
   docs-check:
@@ -216,18 +217,21 @@ jobs:
           echo "- **Cloud Testing Needed**: $NEEDS_CLOUD_TEST" >> $GITHUB_STEP_SUMMARY
           echo "- **Test Type**: $TEST_TYPE" >> $GITHUB_STEP_SUMMARY
 
-  # Conditional cloud testing for PRs
-  cloud-test-pr:
-    name: ☁️ Cloud Test (PR)
-    uses: ./.github/workflows/test-infrastructure.yml
-    needs: [quick-checks, change-detection]
-    if: |
-      needs.change-detection.outputs.needs_cloud_test == 'true' &&
-      github.event.pull_request.draft == false
-    secrets: inherit
-    with:
-      test_type: ${{ needs.change-detection.outputs.test_type }}
-      keep_infrastructure: false
+  # DISABLED: Conditional cloud testing for PRs
+  # TODO: Re-enable when cloud testing is ready
+  # Currently using Docker-based testing instead (see docker-test.yml)
+  #
+  # cloud-test-pr:
+  #   name: ☁️ Cloud Test (PR)
+  #   uses: ./.github/workflows/test-infrastructure.yml
+  #   needs: [quick-checks, change-detection]
+  #   if: |
+  #     needs.change-detection.outputs.needs_cloud_test == 'true' &&
+  #     github.event.pull_request.draft == false
+  #   secrets: inherit
+  #   with:
+  #     test_type: ${{ needs.change-detection.outputs.test_type }}
+  #     keep_infrastructure: false
 
   # Final PR status check
   pr-status:
@@ -269,12 +273,9 @@ jobs:
 
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Cloud testing status
-          if [[ "${{ needs.change-detection.outputs.needs_cloud_test }}" == "true" ]]; then
-            echo "- ☁️ **Cloud Testing**: Triggered (check test-infrastructure workflow)" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- ☁️ **Cloud Testing**: Skipped (no critical changes)" >> $GITHUB_STEP_SUMMARY
-          fi
+          # Testing status
+          echo "- 🐳 **Docker Testing**: Check docker-test.yml workflow for integration tests" >> $GITHUB_STEP_SUMMARY
+          echo "- ☁️ **Cloud Testing**: Disabled (Docker-based testing active)" >> $GITHUB_STEP_SUMMARY
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🎉 Next Steps" >> $GITHUB_STEP_SUMMARY

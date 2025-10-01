@@ -46,12 +46,9 @@ RUN useradd -m -s /bin/bash devuser && \
 COPY install.sh /tmp/install.sh
 COPY src/ /tmp/src/
 
-# Install for both users
-RUN su - testuser -c 'curl -sSL https://raw.githubusercontent.com/zentala/tmux-persistent-console/main/install.sh | bash || \
-    (cd /tmp && bash install.sh)'
-
-RUN su - devuser -c 'curl -sSL https://raw.githubusercontent.com/zentala/tmux-persistent-console/main/install.sh | bash || \
-    (cd /tmp && bash install.sh)'
+# Install configuration (but don't create tmux sessions yet - they need to be created at runtime)
+RUN su - testuser -c 'cd /tmp && bash install.sh || true'
+RUN su - devuser -c 'cd /tmp && bash install.sh || true'
 
 # Create test script
 RUN cat > /usr/local/bin/test-console.sh << 'EOF'
@@ -101,8 +98,40 @@ Test switching between users:
 ===============================================
 EOF
 
+# Create entrypoint script to initialize tmux sessions on startup
+RUN cat > /docker-entrypoint.sh << 'EOF'
+#!/bin/bash
+set -e
+
+echo "🚀 Initializing tmux sessions for users..."
+
+# Create sessions for testuser
+su - testuser -c '
+  if ! tmux has-session -t console-1 2>/dev/null; then
+    cd ~/.tmux-persistent-console && bash setup.sh
+    echo "✅ Created sessions for testuser"
+  fi
+'
+
+# Create sessions for devuser
+su - devuser -c '
+  if ! tmux has-session -t console-1 2>/dev/null; then
+    cd ~/.tmux-persistent-console && bash setup.sh
+    echo "✅ Created sessions for devuser"
+  fi
+'
+
+echo "🎉 All tmux sessions ready!"
+
+# Start SSH daemon
+exec "$@"
+EOF
+
+RUN chmod +x /docker-entrypoint.sh
+
 # SSH port
 EXPOSE 22
 
-# Start SSH daemon
+# Use entrypoint to initialize sessions, then start sshd
+ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["/usr/sbin/sshd", "-D"]
