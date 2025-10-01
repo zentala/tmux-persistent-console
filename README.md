@@ -239,14 +239,35 @@ cp src/connect.sh ~/bin/connect-console
 chmod +x ~/bin/*
 ```
 
+### Auto-Start on System Boot (Systemd)
+```bash
+# Copy systemd service file
+mkdir -p ~/.config/systemd/user
+cp src/tmux-console.service ~/.config/systemd/user/
+
+# Enable and start service
+systemctl --user daemon-reload
+systemctl --user enable tmux-console.service
+systemctl --user start tmux-console.service
+
+# Enable user lingering (sessions persist after logout)
+sudo loginctl enable-linger $USER
+
+# Check status
+systemctl --user status tmux-console.service
+```
+
 ## 🚨 Troubleshooting
 
-### Sessions Don't Exist
+### Sessions Don't Exist After Reboot
 ```bash
-# Run setup script
+# Option 1: Run setup script manually
 setup-console-sessions
 # or
-~/tmux-persistent-console/src/setup.sh
+~/.vps/sessions/src/setup.sh
+
+# Option 2: Setup auto-start with systemd (recommended)
+# See "Auto-Start on System Boot" section above
 ```
 
 ### Function Keys Don't Work

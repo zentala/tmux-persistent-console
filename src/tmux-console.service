@@ -1,0 +1,11 @@
+[Unit]
+Description=Tmux persistent console sessions
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/bash %h/.vps/sessions/src/setup.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target
