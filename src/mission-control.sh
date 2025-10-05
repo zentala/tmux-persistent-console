@@ -155,10 +155,6 @@ show_mission_control() {
         return 1
     fi
 
-    # Export functions for fzf to use
-    export -f preview_session
-    export CURRENT_SESSION
-
     # Build session list
     local session_list=$(build_session_list)
 
@@ -168,32 +164,75 @@ show_mission_control() {
         return 1
     fi
 
-    # fzf with preview and keybindings
+    # Create inline preview script
+    local preview_cmd='
+        session=$(echo {} | awk "{print \$3}")
+        if [ -n "$session" ]; then
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "Session: $session"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+            tmux list-windows -t "$session" -F "Window #{window_index}: #{window_name} (#{window_panes} panes)" 2>/dev/null
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "Current pane:"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo ""
+            tmux capture-pane -t "$session" -p -S -15 2>/dev/null
+        fi
+    '
+
+    # fzf with preview and keybindings (compatible with fzf 0.20+)
     local selected=$(echo "$session_list" | fzf \
         --height=100% \
         --border \
-        --prompt="❯ " \
-        --pointer="▶" \
-        --header="$HEADER | [ENTER] Switch  [Ctrl+R] Restart  [Ctrl+←→] Prev/Next  [ESC] Close" \
-        --preview="bash -c 'preview_session {}'" \
+        --prompt="> " \
+        --header="$HEADER | [ENTER] Switch  [Ctrl+R] Restart  [ESC] Close" \
+        --preview="$preview_cmd" \
         --preview-window=right:60% \
-        --bind="ctrl-r:execute(bash -c 'restart_session \$(echo {} | awk \"{print \\\$3}\")' && sleep 1)+reload(bash -c build_session_list)" \
-        --bind="ctrl-left:preview-up" \
-        --bind="ctrl-right:preview-down" \
-        --ansi \
-        --cycle \
         --reverse)
 
     # Extract session name from selection
     local session_name=$(echo "$selected" | awk '{print $3}')
 
     if [ -n "$session_name" ]; then
-        # Switch to selected session
-        if [ -n "$TMUX" ]; then
-            tmux switch-client -t "$session_name" 2>/dev/null
-        else
-            tmux attach-session -t "$session_name" 2>/dev/null
-        fi
+        # Ask what to do with selected session
+        clear
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "  Session: $session_name"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "  [ENTER]  Switch to this session"
+        echo "  [R]      Restart session (kill + recreate)"
+        echo "  [ESC]    Cancel"
+        echo ""
+        echo -n "Choose action: "
+
+        read -n 1 action
+        echo ""
+
+        case "$action" in
+            r|R)
+                echo ""
+                echo "⚠  Restarting session '$session_name'..."
+                restart_session "$session_name"
+                echo ""
+                echo "✓ Session restarted. Press any key to continue..."
+                read -n 1
+                ;;
+            ""|$'\n')
+                # Switch to selected session
+                if [ -n "$TMUX" ]; then
+                    tmux switch-client -t "$session_name" 2>/dev/null
+                else
+                    tmux attach-session -t "$session_name" 2>/dev/null
+                fi
+                ;;
+            *)
+                # Cancel - do nothing
+                ;;
+        esac
     fi
 }
 
