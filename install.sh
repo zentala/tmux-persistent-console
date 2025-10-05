@@ -106,7 +106,7 @@ EOF
 
 chmod +x "$BIN_DIR"/*
 
-# Add to PATH if needed
+# Add to PATH and safe-exit if needed
 if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
     echo -e "${YELLOW}🛤️  Adding $BIN_DIR to PATH...${NC}"
 
@@ -115,6 +115,9 @@ if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
         echo "" >> "$HOME/.bashrc"
         echo "# tmux-persistent-console" >> "$HOME/.bashrc"
         echo "export PATH=\"\$HOME/bin:\$PATH\"" >> "$HOME/.bashrc"
+        echo "" >> "$HOME/.bashrc"
+        echo "# Safe exit wrapper for tmux sessions" >> "$HOME/.bashrc"
+        echo "[ -f ~/.tmux-persistent-console/safe-exit.sh ] && source ~/.tmux-persistent-console/safe-exit.sh" >> "$HOME/.bashrc"
     fi
 
     # Add to zshrc
@@ -122,6 +125,9 @@ if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
         echo "" >> "$HOME/.zshrc"
         echo "# tmux-persistent-console" >> "$HOME/.zshrc"
         echo "export PATH=\"\$HOME/bin:\$PATH\"" >> "$HOME/.zshrc"
+        echo "" >> "$HOME/.zshrc"
+        echo "# Safe exit wrapper for tmux sessions" >> "$HOME/.zshrc"
+        echo "[ -f ~/.tmux-persistent-console/safe-exit.sh ] && source ~/.tmux-persistent-console/safe-exit.sh" >> "$HOME/.zshrc"
     fi
 
     # Add to current session

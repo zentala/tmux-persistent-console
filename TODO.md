@@ -1,5 +1,52 @@
 # TODO - Tmux Persistent Console
 
+## 🔴 CRITICAL Priority
+
+### 0. Safe Exit Wrapper - Code Quality Improvements
+**Status**: ✅ Working, needs refactoring
+**Review Date**: 2025-10-05
+**Current Score**: 6.5/10
+
+**Phase 1: Critical Fixes (HIGH PRIORITY)**
+- [ ] **#2** Fix trap cleanup - ensure `trap - INT` always executes
+- [ ] **#6** Secure temp file handling - use `mktemp` with proper permissions
+- [ ] **#5** Add error handling for all tmux commands
+- [ ] **#3** Fix race condition in session restart (increase delay or add lock)
+
+**Phase 2: Quality Improvements (MEDIUM PRIORITY)**
+- [ ] **#15** Refactor into smaller functions:
+  - `_is_tmux_session()`
+  - `_show_menu_and_read_choice()`
+  - `_handle_user_choice()`
+  - `_detach_safely()`
+  - `_restart_session()`
+- [ ] **#4** Replace magic numbers with constants:
+  - `DETACH_DELAY=0.8`
+  - `RESTART_DELAY=1`
+  - `ERROR_DISPLAY_TIME=2`
+- [ ] **#7** Create `key_label()` helper function for DRY
+- [ ] **#9** Merge duplicate case statements (feedback + logic)
+
+**Phase 3: Nice to Have (LOW PRIORITY)**
+- [ ] **#10** Add automated tests (unit tests for all key combinations)
+- [ ] **#8** Add debug logging with `DEBUG_SAFE_EXIT` flag
+- [ ] **#16** Add config file support (`~/.tmux-console/config`)
+- [ ] **#17** Add pre/post detach hooks
+- [ ] **#13** Add inline documentation (docstrings)
+- [ ] **#14** Add ASCII fallback for emoji (terminal compatibility)
+- [ ] **#11** Check `$TERM` capabilities before using colors
+- [ ] **#19** Sanitize `$session_name` to prevent command injection
+- [ ] **#20** Move temp files to `~/.cache/tmux-console/` with `umask 077`
+
+**Files**:
+- `src/safe-exit.sh` - main implementation
+- `SAFE-EXIT.md` - user documentation
+- `tests/test-safe-exit.sh` - basic verification (needs expansion)
+
+**See**: Code review notes in session history (2025-10-05)
+
+---
+
 ## 🔴 HIGH Priority
 
 ### 1. Improve F12 Help Menu UI/UX

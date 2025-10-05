@@ -40,6 +40,7 @@ Working on remote servers with AI CLI tools (Claude Code, GitHub Copilot CLI) or
 - Survives server reboots (with proper setup)
 - Auto-recovery from network issues
 - Work continues exactly where you left off
+- **Safe-exit protection** - prevents accidental session termination
 
 ### 🤖 AI CLI Optimized
 Perfect companion for:
@@ -256,6 +257,36 @@ sudo loginctl enable-linger $USER
 # Check status
 systemctl --user status tmux-console.service
 ```
+
+## 🛡️ Safe Exit Protection
+
+**Problem**: Typing `exit` in a tmux session kills the shell → destroys the session → you lose everything!
+
+**Solution**: Safe-exit wrapper that prompts before destroying sessions.
+
+When you type `exit` in a tmux session:
+```
+⚠️  WARNING: You are in a tmux session!
+
+If you exit this shell, the tmux session will be DESTROYED and you will lose:
+  • Command history from this session
+  • Any running processes
+  • Scrollback buffer
+
+Options:
+  [Enter/Space] - Detach safely (recommended) - keeps session alive
+  [d]           - Detach safely (same as above)
+  [y]           - YES, kill this session permanently
+  [n]           - Cancel, stay in session
+```
+
+**Features**:
+- 🛡️ **Safe by default** - Enter/Space detaches without killing
+- ⚠️ **Requires confirmation** - Must type `y` to destroy session
+- 📚 **Educates users** - Shows consequences before action
+- 🚀 **Automatic installation** - Included in setup
+
+**See**: [SAFE-EXIT.md](SAFE-EXIT.md) for complete documentation
 
 ## 🚨 Troubleshooting
 
