@@ -45,6 +45,72 @@ if ! command -v tmux &> /dev/null; then
     echo -e "${GREEN}✅ Tmux installed successfully${NC}"
 fi
 
+# Install TUI tools (gum, fzf)
+echo -e "${YELLOW}🎨 Installing TUI enhancements...${NC}"
+
+# Install fzf (fuzzy finder)
+if ! command -v fzf &> /dev/null; then
+    echo -e "${YELLOW}  Installing fzf...${NC}"
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        if command -v apt-get &> /dev/null; then
+            sudo apt-get install -y fzf
+        elif command -v yum &> /dev/null; then
+            sudo yum install -y fzf
+        elif command -v pacman &> /dev/null; then
+            sudo pacman -S fzf
+        else
+            echo -e "${YELLOW}  ⚠️  fzf not available in package manager, trying git install...${NC}"
+            git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install --bin
+        fi
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        if command -v brew &> /dev/null; then
+            brew install fzf
+        fi
+    fi
+    [ -f ~/.fzf.bash ] && source ~/.fzf.bash
+    echo -e "${GREEN}  ✅ fzf installed${NC}"
+else
+    echo -e "${GREEN}  ✅ fzf already installed${NC}"
+fi
+
+# Install gum (modern TUI)
+if ! command -v gum &> /dev/null; then
+    echo -e "${YELLOW}  Installing gum...${NC}"
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        # Try snap first (most modern systems)
+        if command -v snap &> /dev/null; then
+            sudo snap install gum 2>/dev/null || {
+                # Fallback to manual install
+                echo -e "${YELLOW}  ⚠️  snap failed, trying manual install...${NC}"
+                wget -q https://github.com/charmbracelet/gum/releases/download/v0.14.0/gum_0.14.0_linux_amd64.tar.gz -O /tmp/gum.tar.gz
+                tar -xzf /tmp/gum.tar.gz -C /tmp
+                sudo mv /tmp/gum /usr/local/bin/
+                rm /tmp/gum.tar.gz
+            }
+        elif command -v apt-get &> /dev/null; then
+            # Debian/Ubuntu - manual install
+            wget -q https://github.com/charmbracelet/gum/releases/download/v0.14.0/gum_0.14.0_linux_amd64.tar.gz -O /tmp/gum.tar.gz
+            tar -xzf /tmp/gum.tar.gz -C /tmp
+            sudo mv /tmp/gum /usr/local/bin/
+            rm /tmp/gum.tar.gz
+        else
+            echo -e "${YELLOW}  ⚠️  gum installation not available, will use fallback TUI${NC}"
+        fi
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        if command -v brew &> /dev/null; then
+            brew install gum
+        fi
+    fi
+
+    if command -v gum &> /dev/null; then
+        echo -e "${GREEN}  ✅ gum installed${NC}"
+    else
+        echo -e "${YELLOW}  ⚠️  gum not installed, TUI will fallback to fzf/whiptail${NC}"
+    fi
+else
+    echo -e "${GREEN}  ✅ gum already installed${NC}"
+fi
+
 # Create directories
 echo -e "${YELLOW}📁 Creating directories...${NC}"
 mkdir -p "$INSTALL_DIR" "$BIN_DIR"
@@ -53,7 +119,12 @@ mkdir -p "$INSTALL_DIR" "$BIN_DIR"
 if [ -d "./src" ]; then
     # Local installation
     echo -e "${YELLOW}📋 Copying local files...${NC}"
-    cp src/* "$INSTALL_DIR/"
+    cp -r src/* "$INSTALL_DIR/"
+    # Ensure TUI library is copied
+    if [ -d "./src/tui" ]; then
+        mkdir -p "$INSTALL_DIR/tui"
+        cp -r src/tui/* "$INSTALL_DIR/tui/"
+    fi
 else
     # Remote installation
     echo -e "${YELLOW}⬇️  Downloading files...${NC}"
@@ -61,6 +132,17 @@ else
     curl -sSL "https://raw.githubusercontent.com/YOUR_USERNAME/tmux-persistent-console/main/src/connect.sh" -o "$INSTALL_DIR/connect.sh"
     curl -sSL "https://raw.githubusercontent.com/YOUR_USERNAME/tmux-persistent-console/main/src/tmux.conf" -o "$INSTALL_DIR/tmux.conf"
     curl -sSL "https://raw.githubusercontent.com/YOUR_USERNAME/tmux-persistent-console/main/src/uninstall.sh" -o "$INSTALL_DIR/uninstall.sh"
+    curl -sSL "https://raw.githubusercontent.com/YOUR_USERNAME/tmux-persistent-console/main/src/safe-exit.sh" -o "$INSTALL_DIR/safe-exit.sh"
+    curl -sSL "https://raw.githubusercontent.com/YOUR_USERNAME/tmux-persistent-console/main/src/console-help.sh" -o "$INSTALL_DIR/console-help.sh"
+    curl -sSL "https://raw.githubusercontent.com/YOUR_USERNAME/tmux-persistent-console/main/src/help-console.sh" -o "$INSTALL_DIR/help-console.sh"
+
+    # Download TUI library
+    mkdir -p "$INSTALL_DIR/tui"
+    curl -sSL "https://raw.githubusercontent.com/YOUR_USERNAME/tmux-persistent-console/main/src/tui/tui-core.sh" -o "$INSTALL_DIR/tui/tui-core.sh"
+    curl -sSL "https://raw.githubusercontent.com/YOUR_USERNAME/tmux-persistent-console/main/src/tui/tui-menu.sh" -o "$INSTALL_DIR/tui/tui-menu.sh"
+    curl -sSL "https://raw.githubusercontent.com/YOUR_USERNAME/tmux-persistent-console/main/src/tui/tui-dialogs.sh" -o "$INSTALL_DIR/tui/tui-dialogs.sh"
+    curl -sSL "https://raw.githubusercontent.com/YOUR_USERNAME/tmux-persistent-console/main/src/tui/tui-list.sh" -o "$INSTALL_DIR/tui/tui-list.sh"
+    curl -sSL "https://raw.githubusercontent.com/YOUR_USERNAME/tmux-persistent-console/main/src/tui/tui-status.sh" -o "$INSTALL_DIR/tui/tui-status.sh"
 fi
 
 # Make scripts executable

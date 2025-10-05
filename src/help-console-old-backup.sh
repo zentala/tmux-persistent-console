@@ -1,25 +1,28 @@
 #!/bin/bash
 # Minimalna konsola pomocy - bez ładowania profili
 # Używana przez F12 w tmux
-# Refactored to use TUI library
 
 # Wyłącz wszystkie profile i rc files
 export BASH_ENV=""
 export ENV=""
 
-# Load TUI library
-TUI_DIR="$(dirname "${BASH_SOURCE[0]}")/tui"
-source "$TUI_DIR/tui-core.sh"
-source "$TUI_DIR/tui-status.sh"
+# Proste kolory
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
 
-# Display help content
-show_help_content() {
-    clear
+# Clear screen i pokaż help
+clear
 
-    tui_header "🖥️  TMUX PERSISTENT CONSOLE - Quick Help Reference"
-    echo ""
+cat << 'EOF'
+╔═══════════════════════════════════════════════════════════════╗
+║                🖥️  TMUX PERSISTENT CONSOLE                    ║
+║                     Quick Help Reference                      ║
+╚═══════════════════════════════════════════════════════════════╝
 
-    cat << 'EOF'
 🚀 CONSOLE SWITCHING:
    Ctrl+F1  📟 Console-1 (Claude Code)
    Ctrl+F2  🤖 Console-2 (Copilot CLI)
@@ -47,18 +50,12 @@ show_help_content() {
 • This help window stays open - switch with Ctrl+F1-F7
 • Type 'exit' or close window when done
 
+════════════════════════════════════════════════════════════════
 EOF
 
-    tui_separator
-    echo ""
-
-    tui_status_line "Help Console" "Ready" "green"
-    tui_status_line "Available" "console-help, connect-console, exit" "cyan"
-    echo ""
-}
-
-# Show initial help
-show_help_content
+echo -e "${CYAN}Help Console Ready${NC} - Use Ctrl+F1-F7 to switch consoles"
+echo -e "${YELLOW}Commands available:${NC} console-help, connect-console, exit"
+echo ""
 
 # Prosty shell loop - minimalistyczny
 while true; do
@@ -79,7 +76,15 @@ while true; do
             echo "Available: console-help, connect-console, exit"
             ;;
         "clear")
-            show_help_content
+            clear
+            cat << 'EOF'
+🖥️  TMUX PERSISTENT CONSOLE - Help Console
+
+Quick Reference:
+• Ctrl+F1-F7: Switch to console 1-7
+• Ctrl+F8: Disconnect  • Ctrl+F9: Last session
+• Commands: console-help, connect-console, exit
+EOF
             ;;
         *)
             echo "Unknown command: $cmd"
