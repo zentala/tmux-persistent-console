@@ -27,15 +27,23 @@ fi
 
 # Check if gum is available
 if command -v gum &>/dev/null; then
-    # Beautiful gum confirmation
-    if gum confirm "⚠️  Restart $CURRENT_SESSION?" \
-        --affirmative "Yes, restart now" \
-        --negative "No, cancel" \
-        --prompt.foreground="226" \
-        --selected.background="196" \
-        --selected.foreground="255"; then
+    # Beautiful gum choice menu (works in popup, unlike confirm)
+    clear
+    echo ""
+    gum style \
+        --foreground 226 \
+        --bold \
+        "⚠️  Restart $CURRENT_SESSION?"
+    echo ""
+    echo "This will kill current session and create a new one."
+    echo "You will lose unsaved work."
+    echo ""
 
+    choice=$(gum choose "Yes, restart now" "No, cancel" --cursor.foreground="212")
+
+    if [ "$choice" = "Yes, restart now" ]; then
         # User confirmed - restart session
+        echo ""
         gum style --foreground 226 "⚙️  Restarting $CURRENT_SESSION..."
 
         # Call restart logic
