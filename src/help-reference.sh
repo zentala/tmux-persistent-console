@@ -63,28 +63,16 @@ cat << 'EOF'
     Author:         Zentala
 
 
-  Press F1-F7 or click tab below to switch consoles
+  Press F1-F7 or click tab to switch consoles
 
 
 EOF
 
-# Simple shell loop for basic commands
+# Keep window open (static display, no input)
 echo ""
-echo "help> Type 'q' to close, or switch with F1-F7"
+echo "  This is a read-only reference window."
+echo "  Switch to another console using F1-F7 or close this tab."
+echo ""
 
-while true; do
-    echo -n "help> "
-    read -r cmd
-
-    case "$cmd" in
-        q|quit|exit)
-            exit 0
-            ;;
-        clear)
-            exec "$0"  # Restart script to refresh
-            ;;
-        *)
-            echo "Available commands: q (quit), clear (refresh)"
-            ;;
-    esac
-done
+# Sleep forever (keep window visible)
+sleep infinity
