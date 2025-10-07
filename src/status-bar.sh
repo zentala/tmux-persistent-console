@@ -5,7 +5,10 @@
 # Nerd Font icons
 ICON_ACTIVE=""  # Active session (has processes)
 ICON_IDLE=""    # Idle session (empty)
-ICON_HEADER="🖥️"  # Header icon
+ICON_HEADER="🖥️"   # Header icon
+ICON_TERMINAL="" # Terminal icon for F keys
+ICON_MANAGER="󰒓"  # Manager/settings icon
+ICON_HELP=""     # Help/question icon
 
 # Get current session and terminal width
 CURRENT_SESSION="${1:-$(tmux display-message -p '#S' 2>/dev/null)}"
@@ -69,10 +72,10 @@ build_status_bar() {
 
             # Format based on screen width
             if $WIDE_MODE; then
-                # Wide: show icon + number:name
-                output+="#[fg=$fg,bg=$bg,bold] $icon $i:${window_name:0:6} #[default]$shadow"
+                # Wide: show status icon + terminal icon + F-key
+                output+="#[fg=$fg,bg=$bg,bold] $icon $ICON_TERMINAL F$i #[default]$shadow"
             else
-                # Narrow: only icon + number
+                # Narrow: only status icon + number
                 output+="#[fg=$fg,bg=$bg,bold] $icon$i #[default]$shadow"
             fi
         else
@@ -110,11 +113,11 @@ build_status_bar() {
     fi
 
     if $WIDE_MODE; then
-        output+=" #[fg=$f11_fg,bg=$f11_bg,bold] 󰆍 F11:Manager #[default]$f11_shadow "
-        output+="#[fg=$f12_fg,bg=$f12_bg,bold] ? F12:Help #[default]$f12_shadow"
+        output+=" #[fg=$f11_fg,bg=$f11_bg,bold] $ICON_MANAGER F11 #[default]$f11_shadow "
+        output+="#[fg=$f12_fg,bg=$f12_bg,bold] $ICON_HELP F12 #[default]$f12_shadow"
     else
-        output+=" #[fg=$f11_fg,bg=$f11_bg,bold] F11 #[default]$f11_shadow "
-        output+="#[fg=$f12_fg,bg=$f12_bg,bold] F12 #[default]$f12_shadow"
+        output+=" #[fg=$f11_fg,bg=$f11_bg,bold] $ICON_MANAGER #[default]$f11_shadow "
+        output+="#[fg=$f12_fg,bg=$f12_bg,bold] $ICON_HELP #[default]$f12_shadow"
     fi
 
     echo "$output"
