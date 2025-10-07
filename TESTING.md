@@ -4,7 +4,12 @@
 
 ### Status Bar Tests
 
-- [ ] **Single status bar** - tylko jedna linia na dole (nie podwójna)
+**CRITICAL REQUIREMENTS:**
+- [ ] **Single status bar** - tylko jedna linia na dole (nie podwójna) ⚠️ MUST TEST
+- [ ] **Always at bottom** - pasek zawsze na ostatniej linii terminala ⚠️ MUST TEST
+- [ ] **Persists after switch** - pasek widoczny po każdym przełączeniu sesji ⚠️ MUST TEST
+
+**Visual Tests:**
 - [ ] **All 7 consoles visible** - widać wszystkie konsole 1-7
 - [ ] **Active session highlighted** - obecna sesja podświetlona (cyan + cień)
 - [ ] **Icons correct**:
@@ -15,6 +20,18 @@
   - [ ]  dla F12 Help
 - [ ] **Header shows** - `🖥️ CONSOLE@hostname` (lub tylko 🖥️ na wąskim)
 - [ ] **Responsive** - na wąskim ekranie (<120): tylko numery bez nazw
+
+**Automated Tests:**
+```bash
+# Run full status bar verification
+~/.vps/sessions/tests/test-status-bar.sh
+
+# Run precise position test
+~/.vps/sessions/tests/test-status-position.sh
+
+# ⚠️ CRITICAL: Test scroll behavior (bar must stay pinned!)
+~/.vps/sessions/tests/test-status-scroll.sh
+```
 
 ### Keyboard Shortcuts Tests
 
