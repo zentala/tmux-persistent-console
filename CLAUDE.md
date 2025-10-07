@@ -8,6 +8,27 @@ This file provides guidance to Claude Code when working with this codebase.
 
 ## Code Quality Standards
 
+### ⚠️ Critical: Prevent Status Bar Flickering
+
+**Rule:** NEVER use external scripts in tmux status bar with periodic refresh.
+
+**Why:** External script + `status-interval > 0` = visible flicker every N seconds.
+
+**Solution:** Always use native tmux format strings `#{}` with `status-interval 0`.
+
+**Details:** See [techdocs/lesson-01-status-bar-flickering.md](techdocs/lesson-01-status-bar-flickering.md)
+
+**Quick check:**
+```tmux
+# ❌ BAD - Causes flickering
+set -g status-interval 5
+set -g status-left '#(script.sh)'
+
+# ✅ GOOD - No flicker
+set -g status-interval 0
+set -g status-left '#{USER}@#H'
+```
+
 ### Current Priority: Safe Exit Wrapper Refactoring
 
 **Status**: Working prototype (6.5/10) - needs production hardening
