@@ -151,7 +151,7 @@ echo ""
 
 # Test 1: Basic SSH connection
 echo -n "Test 1: SSH Connection... "
-if sshpass -p testpassword ssh -o BatchMode=no testuser@tmux-server "echo connected" > /dev/null 2>&1; then
+if sshpass -p testpassword ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null testuser@tmux-server "echo connected" > /dev/null 2>&1; then
     echo "✅ PASSED"
 else
     echo "❌ FAILED"
@@ -160,7 +160,7 @@ fi
 
 # Test 2: Tmux sessions exist
 echo -n "Test 2: Tmux sessions... "
-SESSION_COUNT=$(sshpass -p testpassword ssh testuser@tmux-server "tmux ls 2>/dev/null | wc -l")
+SESSION_COUNT=$(sshpass -p testpassword ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null testuser@tmux-server "tmux ls 2>/dev/null | wc -l")
 if [ "$SESSION_COUNT" -eq 7 ]; then
     echo "✅ PASSED (7 sessions)"
 else
@@ -169,7 +169,7 @@ fi
 
 # Test 3: Connect script exists
 echo -n "Test 3: Connect script... "
-if sshpass -p testpassword ssh testuser@tmux-server "which connect-console" > /dev/null 2>&1; then
+if sshpass -p testpassword ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null testuser@tmux-server "which connect-console" > /dev/null 2>&1; then
     echo "✅ PASSED"
 else
     echo "❌ FAILED"
@@ -177,7 +177,7 @@ fi
 
 # Test 4: Session switching
 echo -n "Test 4: Session switching... "
-if sshpass -p testpassword ssh testuser@tmux-server "tmux has-session -t console-1 && tmux has-session -t console-7" > /dev/null 2>&1; then
+if sshpass -p testpassword ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null testuser@tmux-server "tmux has-session -t console-1 && tmux has-session -t console-7" > /dev/null 2>&1; then
     echo "✅ PASSED"
 else
     echo "❌ FAILED"
@@ -185,7 +185,7 @@ fi
 
 # Test 5: Multi-user support
 echo -n "Test 5: Multi-user setup... "
-if sshpass -p devpassword ssh devuser@tmux-server "tmux ls 2>/dev/null | grep -q console" > /dev/null 2>&1; then
+if sshpass -p devpassword ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null devuser@tmux-server "tmux ls 2>/dev/null | grep -q console" > /dev/null 2>&1; then
     echo "✅ PASSED"
 else
     echo "❌ FAILED"
