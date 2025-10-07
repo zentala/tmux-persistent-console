@@ -1,9 +1,11 @@
 # Icons 
 
+## NF
 uzyjmy https://www.nerdfonts.com/ i zalozmy ze user je ma. jak nie to jego strate :P
 ew zrobimy wersje fallback bez icon jesli sie da wykryc czy sa np podczas 1st konfiguracji czy cos
 albo damuy opcje przelacznaia czy wylacznia ikon w settingach (i przez to configu)
 
+## NF network icons set
 NF fonts ma taki zestaw sierwocyh ikon jakie chce uzyc
 
 nf-md-ip_networkf0a60
@@ -35,13 +37,23 @@ nf-md-server_network_offf048e
 nf-md-upload_network_outlinef0cd8
 nf-md-access_point_network_offf0be
 
-aplikacja tez bedzie miala logo terminal f0c60 sieciowego
-ale w srodku bedzimeyuzywac na pasku dla apliakcji pewnie tego f048d np z nazwa server np hostname
-mozna tez uzyc tego dla username f0be6mozna zrobic 
-terminale wlaczone f08a9
-terminale mozliwe do wlaczenia f0c9d
-manager (f11) f13c9 or  f1acb
-pomoc (f12) f0c8a
+##  iconography
 
-mozna zrobic taki pasek:
-[ [term icon] pTTY ] [user icon] [
+ikony na pasek (i nie app tylko)
+
+* aplikacja tez bedzie miala logo terminal f0c60 sieciowego
+* server name f048d np z nazwa server np hostname
+* mozna tez uzyc tego dla username f0be6mozna zrobic 
+* terminale wlaczone f08a9
+* terminale nie dzialajce / niedostpene /zabite i nie wlczone f0c5f
+* terminale mozliwe do wlaczenia f0c9d
+* manager (f11) f13c9 or  f1acb
+* pomoc (f12) f0c8a
+
+## przykladowy pasek zadan z ikonami
+
+ mozna zrobic taki pasek:
+[ (term_icon) pTTY ][ (user_icon) {user name} @ (server_icon) {server_name} ]  [(term_icon) F1] [(ti) F2] [...F7] [(empty_icon) F8-10] [(manager_icon) F11 Manager] [(help_icon) F12 Help]
+
+* do tego pasek powinien zaweirac tabsy, tabszy maja miec shaow!
+*  usubamy stara lokige ze jaksi cttrl + chyba f10 to rozlacz sesnje, mtma ma byc virual sesja czy zawieszona
