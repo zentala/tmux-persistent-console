@@ -46,9 +46,17 @@ RUN useradd -m -s /bin/bash devuser && \
 COPY install.sh /tmp/install.sh
 COPY src/ /tmp/src/
 
-# Install configuration (but don't create tmux sessions yet - they need to be created at runtime)
-RUN su - testuser -c 'cd /tmp && bash install.sh || true'
-RUN su - devuser -c 'cd /tmp && bash install.sh || true'
+# Install for testuser
+RUN mkdir -p /home/testuser/.vps/sessions && \
+    cp -r /tmp/src/* /home/testuser/.vps/sessions/ && \
+    chown -R testuser:testuser /home/testuser/.vps && \
+    chmod +x /home/testuser/.vps/sessions/*.sh
+
+# Install for devuser
+RUN mkdir -p /home/devuser/.vps/sessions && \
+    cp -r /tmp/src/* /home/devuser/.vps/sessions/ && \
+    chown -R devuser:devuser /home/devuser/.vps && \
+    chmod +x /home/devuser/.vps/sessions/*.sh
 
 # Create test script
 RUN cat > /usr/local/bin/test-console.sh << 'EOF'
@@ -108,7 +116,7 @@ echo "🚀 Initializing tmux sessions for users..."
 # Create sessions for testuser
 su - testuser -c '
   if ! tmux has-session -t console-1 2>/dev/null; then
-    cd ~/.tmux-persistent-console && bash setup.sh
+    bash ~/.vps/sessions/setup.sh
     echo "✅ Created sessions for testuser"
   fi
 '
@@ -116,7 +124,7 @@ su - testuser -c '
 # Create sessions for devuser
 su - devuser -c '
   if ! tmux has-session -t console-1 2>/dev/null; then
-    cd ~/.tmux-persistent-console && bash setup.sh
+    bash ~/.vps/sessions/setup.sh
     echo "✅ Created sessions for devuser"
   fi
 '

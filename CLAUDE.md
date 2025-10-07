@@ -6,6 +6,38 @@ This file provides guidance to Claude Code when working with this codebase.
 
 **Tmux Persistent Console** - 7 persistent tmux sessions with safe-exit protection and instant switching for remote development.
 
+## Development Workflow
+
+### 📤 Push & CI/CD Check
+
+**After making changes, ALWAYS check CI/CD builds:**
+
+```bash
+# ✅ RECOMMENDED: Push and watch in background (non-blocking)
+./tools/push-and-watch.sh &
+
+# ⏸️ Alternative: Push and watch (blocks terminal)
+./tools/push-and-watch.sh
+
+# 🔍 Check status anytime
+./tools/check-ci.sh
+
+# 👀 Watch in real-time
+./tools/watch-ci.sh 10  # Refresh every 10 seconds
+```
+
+**Critical:** NEVER push without verifying builds pass!
+
+**Web UI:** https://github.com/zentala/tmux-persistent-console/actions
+
+**Requirements:**
+- GitHub CLI installed: `sudo apt install gh`
+- Authenticated: `gh auth login`
+
+**See:** [tools/README.md](tools/README.md) for complete documentation
+
+---
+
 ## Code Quality Standards
 
 ### ⚠️ Critical: Prevent Status Bar Flickering
