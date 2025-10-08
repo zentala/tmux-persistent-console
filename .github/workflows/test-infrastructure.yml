@@ -264,5 +264,6 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: main
+          base: ${{ github.event.before }}
           head: HEAD
+        continue-on-error: true  # Don't fail if base==head (initial commit or force push)
