@@ -50,7 +50,8 @@ COPY src/ /tmp/src/
 RUN mkdir -p /home/testuser/.vps/sessions && \
     cp -r /tmp/src/* /home/testuser/.vps/sessions/ && \
     chown -R testuser:testuser /home/testuser/.vps && \
-    chmod +x /home/testuser/.vps/sessions/*.sh
+    chmod +x /home/testuser/.vps/sessions/*.sh && \
+    ln -s /home/testuser/.vps/sessions/connect.sh /usr/local/bin/connect-console
 
 # Install for devuser
 RUN mkdir -p /home/devuser/.vps/sessions && \

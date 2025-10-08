@@ -55,17 +55,24 @@ jobs:
         run: |
           echo "🧪 Running automated test suite..."
 
+          # Create results file
+          RESULTS_FILE=$(mktemp)
+          FAILED=false
+
           # Run tests in client container
-          if docker exec tmux-test-client run-tests.sh; then
+          echo "📋 Client Container Tests:" | tee -a "$RESULTS_FILE"
+          if docker exec tmux-test-client run-tests.sh | tee -a "$RESULTS_FILE"; then
             echo "✅ Client tests passed"
           else
             echo "❌ Client tests failed"
-            echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
+            FAILED=true
           fi
 
           # Test from host
           echo ""
           echo "🧪 Testing from host..."
+          echo "" >> "$RESULTS_FILE"
+          echo "📋 Host Tests:" >> "$RESULTS_FILE"
 
           # Install sshpass for testing
           sudo apt-get update && sudo apt-get install -y sshpass
@@ -73,28 +80,34 @@ jobs:
           # Test SSH connection
           echo -n "Test: SSH connection... "
           if sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "echo ok" > /dev/null 2>&1; then
-            echo "✅ PASSED"
+            echo "✅ PASSED" | tee -a "$RESULTS_FILE"
           else
-            echo "❌ FAILED"
-            echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
+            echo "❌ FAILED" | tee -a "$RESULTS_FILE"
+            FAILED=true
           fi
 
           # Test tmux sessions
           echo -n "Test: Tmux sessions... "
           SESSION_COUNT=$(sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux ls 2>/dev/null | wc -l")
           if [ "$SESSION_COUNT" -eq 7 ]; then
-            echo "✅ PASSED (7 sessions)"
+            echo "✅ PASSED (7 sessions)" | tee -a "$RESULTS_FILE"
           else
-            echo "❌ FAILED (found $SESSION_COUNT sessions)"
-            echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
+            echo "❌ FAILED (found $SESSION_COUNT sessions)" | tee -a "$RESULTS_FILE"
+            FAILED=true
           fi
 
           # Test multi-user
           echo -n "Test: Multi-user support... "
           if sshpass -p devpassword ssh -p 2222 -o StrictHostKeyChecking=no devuser@localhost "tmux ls" > /dev/null 2>&1; then
-            echo "✅ PASSED"
+            echo "✅ PASSED" | tee -a "$RESULTS_FILE"
           else
-            echo "❌ FAILED"
+            echo "❌ FAILED" | tee -a "$RESULTS_FILE"
+            FAILED=true
+          fi
+
+          # Save results for summary
+          echo "RESULTS_FILE=$RESULTS_FILE" >> $GITHUB_OUTPUT
+          if [ "$FAILED" = "true" ]; then
             echo "TESTS_FAILED=true" >> $GITHUB_OUTPUT
           fi
 
@@ -131,6 +144,16 @@ jobs:
           else
             echo "### ✅ Status: All Tests Passed" >> $GITHUB_STEP_SUMMARY
           fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          if [ -f "${{ steps.tests.outputs.RESULTS_FILE }}" ]; then
+            cat "${{ steps.tests.outputs.RESULTS_FILE }}" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No test results available" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔧 Container Logs" >> $GITHUB_STEP_SUMMARY
