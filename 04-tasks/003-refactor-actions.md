@@ -1,9 +1,13 @@
-# Task 015: Refactor Action Layer
+**Purpose:** Extract console actions into dedicated, testable action modules
 
-**Phase:** v1.5 Refactoring
+---
+
+# Task 003: Refactor Action Layer
+
+**Phase:** v0.2 Refactoring
 **Priority:** High
 **Estimated Time:** 1-2 days
-**Dependencies:** 013 (State), 014 (UI Components)
+**Dependencies:** Task 001 (State), Task 002 (UI Components), Task 008 (CODE-STANDARDS)
 **Assignee:** Unassigned
 
 ---

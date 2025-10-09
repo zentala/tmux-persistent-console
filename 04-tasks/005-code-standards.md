@@ -7,12 +7,23 @@
 **Phase:** v0.2 Refactoring
 **Priority:** High
 **Estimated Time:** 1 day
-**Dependencies:** 013, 014, 015, 016 (Refactoring complete)
+**Dependencies:** None (informational task)
 **Assignee:** Unassigned
+**Status:** ⚠️ REPLACED BY TASK 008
 
 ---
 
 ## Objective
+
+⚠️ **NOTE:** This task (005) is kept for historical tracking only. The actual work of creating CODE-STANDARDS.md is now **Task 008**, which has higher priority and more detailed scope.
+
+**Reason for change:** Documentation review (Task 006) identified CODE-STANDARDS.md as CRITICAL blocker for refactoring. Task 008 created with proper priority and detailed requirements.
+
+**See:** [008-create-code-standards.md](008-create-code-standards.md) for actual implementation task.
+
+---
+
+## Original Objective
 
 Create comprehensive code standards document that defines coding principles, naming conventions, function documentation, error handling patterns, and best practices for all developers working on pTTY codebase.
 

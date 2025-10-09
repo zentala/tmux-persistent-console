@@ -7,7 +7,7 @@
 **Phase:** v0.2 Refactoring
 **Priority:** Critical
 **Estimated Time:** 2-3 days
-**Dependencies:** v1.0 complete (001-012)
+**Dependencies:** Task 008 (CODE-STANDARDS.md complete)
 **Assignee:** Unassigned
 
 ---

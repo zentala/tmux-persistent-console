@@ -7,7 +7,7 @@
 **Phase:** v0.2 Refactoring
 **Priority:** High
 **Estimated Time:** 2-3 days
-**Dependencies:** 013 (State management complete)
+**Dependencies:** Task 001 (State management complete), Task 008 (CODE-STANDARDS)
 **Assignee:** Unassigned
 
 ---

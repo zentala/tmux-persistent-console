@@ -7,7 +7,7 @@
 **Phase:** v0.2 Refactoring
 **Priority:** High
 **Estimated Time:** 2 days
-**Dependencies:** 013, 014, 015 (Core modules refactored)
+**Dependencies:** Task 001, 002, 003 (Core modules refactored), Task 009 (Testing strategy)
 **Assignee:** Unassigned
 
 ---
