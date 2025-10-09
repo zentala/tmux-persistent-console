@@ -2,9 +2,118 @@
 
 This file provides guidance to Claude Code when working with this codebase.
 
+---
+
+## 🎯 Current Version & Lifecycle Status
+
+**Current Version:** v0.2 (in development)
+**Last Completed:** v0.1 (prototype - functional but monolithic)
+
+**Lifecycle Phase:** 00-rules (Workflow Planning & Organization)
+
+**Phase Progress:**
+- ✅ **00-rules** - Versioning rules, task archival, folder structure (90% complete)
+- 🔄 **01-vision** - Purpose, roadmap, principles (needs review after reorganization)
+- 🔄 **02-planning** - SPEC.md, workshops, detailed specs (needs review after reorganization)
+- 🔄 **03-architecture** - Technical design, ADRs, lessons (needs review after reorganization)
+- ⏳ **04-tasks** - Active tasks for v0.2 (pending - will create after planning review)
+
+**Next Steps:**
+1. Complete 00-rules (folder reorganization, VERSIONING.md finalized)
+2. Review & organize 01-vision, 02-planning, 03-architecture
+3. Define v0.2 scope and create tasks in 04-tasks/
+4. Begin implementation
+
+**Instructions by Phase:**
+- **00-rules:** Follow [00-rules/VERSIONING.md](00-rules/VERSIONING.md) for version planning
+- **01-vision:** Read PURPOSE.md to understand project WHY
+- **02-planning:** SPEC.md is SSOT (Single Source of Truth)
+- **03-architecture:** Check ADRs before technical decisions
+- **04-tasks:** Only work on tasks in `04-tasks/` (current version only)
+
+---
+
+## 📐 Specification-Driven Development
+
+**⚠️ CRITICAL: Before making ANY changes, read [02-planning/SPEC.md](02-planning/SPEC.md) - the unified specification.**
+
+All implementation work MUST reference SPEC.md.
+All documentation MUST align with SPEC.md.
+All conflicts MUST be resolved by updating SPEC.md first.
+
+## 📁 Project Structure & Lifecycle
+
+**Location:** `~/.vps/sessions/` (pTTY root)
+
+### Lifecycle-Based Organization
+
+```
+~/.vps/sessions/
+├── 00-rules/              # Organizacja pracy (versioning, standards)
+├── 01-vision/             # DLACZEGO - Purpose & Direction
+├── 02-planning/           # CO - Requirements & Specifications
+├── 03-architecture/       # JAK - Solution & Technical Design
+├── 04-tasks/              # KIEDY - Active tasks only
+├── src/                   # Implementation (code)
+├── docs/                  # User documentation
+├── tests/                 # Testing infrastructure
+├── tools/                 # Development tools
+└── archive/               # Historical & completed files
+```
+
+**Navigation:**
+- Vision (WHY) → `01-vision/README.md`
+- Specs (WHAT) → `02-planning/SPEC.md` (SSOT)
+- Architecture (HOW) → `03-architecture/ARCHITECTURE.md`
+- Tasks (WHEN) → `04-tasks/README.md`
+
+**See:** [TODO-TREE-STRUCTURE.md](TODO-TREE-STRUCTURE.md) for complete structure
+
+---
+
+## 🔢 Versioning Rules ⚠️ CRITICAL
+
+**Version numbers increment by 0.1 ONLY - NEVER skip versions**
+
+### Format: `vMAJOR.MINOR`
+
+**Correct increments:**
+- ✅ v0.1 → v0.2 → v0.3 → v0.4 → ... → v0.9 → v1.0
+- ✅ v1.0 → v1.1 → v1.2 → v1.3 → ... → v1.9 → v2.0
+- ❌ NEVER: v1.2 → v2.0 (must increment: v1.2 → v1.3 → ... → v1.9 → v2.0)
+- ❌ NEVER: v0.1 → v1.0 (must increment: v0.1 → v0.2 → ... → v0.9 → v1.0)
+
+**Current version:** v0.2 (in development)
+**Last completed:** v0.1 (prototype - functional but monolithic)
+**Next milestone:** v1.0 (refactored + production-ready)
+
+**Complete version plan:** [02-planning/VERSIONING.md](02-planning/VERSIONING.md) ⭐
+
+---
+
 ## Project Overview
 
-**Tmux Persistent Console** - 7 persistent tmux sessions with safe-exit protection and instant switching for remote development.
+**pTTY (PersistentTTY)** - Persistent tmux sessions with safe-exit protection and instant F-key switching for remote development.
+
+### Project Identity
+- **Display name:** pTTY
+- **Full name:** PersistentTTY
+- **CLI/filesystem:** ptty (lowercase)
+- **See:** `docs/naming.md` for complete naming conventions
+
+### Terminal Configuration
+- **5 active consoles by default** (F1-F5) - created on startup
+- **5 suspended consoles available** (F6-F10) - created on demand
+- **F11** = Manager Menu (interactive TUI with `gum`)
+- **F12** = Help Reference (static text display)
+
+**See [SPEC.md](SPEC.md) for:**
+- Complete F-key bindings and behavior
+- Active vs suspended terminal model
+- Manager Menu (F11) specification
+- Help Reference (F12) specification
+- Status bar design (work in progress)
+- Icons and iconography (Nerd Fonts)
 
 ## Development Workflow
 
@@ -259,10 +368,21 @@ _cleanup() {
 
 ## References
 
-- **Main docs**: [README.md](README.md)
-- **User guide**: [SAFE-EXIT.md](SAFE-EXIT.md)
-- **TODO list**: [TODO.md](TODO.md)
-- **Code review**: Session history 2025-10-05
+**Primary Documentation:**
+- **[SPEC.md](SPEC.md)** - Unified specification (ALWAYS CHECK FIRST!)
+- **[README.md](README.md)** - User-facing documentation
+- **[docs/naming.md](docs/naming.md)** - Naming conventions (pTTY/ptty)
+- **[docs/ICONS.md](docs/ICONS.md)** - Icon reference (Nerd Fonts)
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical architecture
+
+**Development Guides:**
+- **[TODO.md](TODO.md)** - Current tasks and priorities
+- **[SAFE-EXIT.md](SAFE-EXIT.md)** - Safe exit wrapper user guide
+- **[tools/README.md](tools/README.md)** - CI/CD monitoring tools
+
+**Technical Docs:**
+- **[techdocs/lesson-01-status-bar-flickering.md](techdocs/lesson-01-status-bar-flickering.md)** - Status bar anti-patterns
+- **[F12-ISSUES-LOG.md](F12-ISSUES-LOG.md)** - F12 implementation history
 
 ## Quick Commands
 

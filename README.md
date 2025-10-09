@@ -29,11 +29,10 @@ Working on remote servers with AI CLI tools (Claude Code, GitHub Copilot CLI) or
 ## ✨ Features
 
 ### 🚀 Instant Session Switching
-- **Ctrl+F1-F7**: Jump directly to console-1 through console-7
-- **Ctrl+F8**: Disconnect safely
-- **Ctrl+F9**: Toggle last session
-- **Ctrl+F10/F11**: Previous/Next session
-- **Ctrl+F12**: Show all sessions
+- **Ctrl+F1-F5**: Jump directly to active consoles (1-5)
+- **Ctrl+F6-F10**: Access suspended consoles on demand (6-10)
+- **Ctrl+F11**: Open Manager Menu (interactive terminal manager)
+- **Ctrl+F12**: Show Help Reference (keyboard shortcuts)
 
 ### 🛡️ Crash-Resistant Design
 - Sessions persist across SSH disconnects
@@ -59,7 +58,7 @@ Perfect companion for:
 
 ### One-Line Installation
 ```bash
-curl -sSL https://raw.githubusercontent.com/YOUR_USERNAME/tmux-persistent-console/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/zentala/tmux-persistent-console/main/install.sh | bash
 ```
 
 ### Instant Usage
@@ -96,33 +95,44 @@ ssh user@server -t "tmux attach -t console-1"
 
 ## 📖 Key Bindings Reference
 
-### 🚀 Function Keys (Instant Access)
-| Key | Action | Purpose |
-|-----|--------|---------|
+### 🚀 Active Consoles (F1-F5)
+| Key | Console | Purpose |
+|-----|---------|---------|
 | `Ctrl+F1` | 🤖 Console-1 | Claude Code / AI Development |
 | `Ctrl+F2` | 🎪 Console-2 | GitHub Copilot CLI |
 | `Ctrl+F3` | 💻 Console-3 | General Development |
 | `Ctrl+F4` | 🧪 Console-4 | Testing & QA |
 | `Ctrl+F5` | 📊 Console-5 | Monitoring & Logs |
-| `Ctrl+F6` | 🌐 Console-6 | Git & Deployment |
-| `Ctrl+F7` | 🔧 Console-7 | System Administration |
-| `Ctrl+F8` | 🚪 Disconnect | Safely detach session |
-| `Ctrl+F9` | 🔄 Toggle last | Switch to previous session |
-| `Ctrl+F10` | ⬅️ Previous | Navigate sessions |
-| `Ctrl+F11` | ➡️ Next | Navigate sessions |
-| `Ctrl+F12` | 📋 **Help Menu** | **First-time user guide!** |
 
-### ⚡ Additional Features
+### 💤 Suspended Consoles (F6-F10)
+| Key | Console | Status |
+|-----|---------|--------|
+| `Ctrl+F6` | Console-6 | Available on demand |
+| `Ctrl+F7` | Console-7 | Available on demand |
+| `Ctrl+F8` | Console-8 | Available on demand |
+| `Ctrl+F9` | Console-9 | Available on demand |
+| `Ctrl+F10` | Console-10 | Available on demand |
+
+### 🎛️ Manager & Help (F11-F12)
 | Key | Action | Purpose |
 |-----|--------|---------|
-| `Ctrl+Alt+R` | 🔄 Reset Terminal | Clear & refresh current terminal |
-| `console-help` | 📖 Help Menu | Access advanced help anytime |
+| `Ctrl+F11` |  **Manager Menu** | Interactive terminal manager (TUI) |
+| `Ctrl+F12` |  **Help Reference** | Keyboard shortcuts & help |
 
-### 🔄 Backup Method (Traditional)
+### ⚡ Additional Navigation & Actions
+| Key | Action | Purpose |
+|-----|--------|---------|
+| `Ctrl+Left` | ⬅️ Previous Session | Navigate backwards |
+| `Ctrl+Right` | ➡️ Next Session | Navigate forwards |
+| `Ctrl+H` | 📋 Shortcuts Popup | Quick reference popup |
+| `Ctrl+R` | 🔄 Restart Console | Restart current console (with confirmation) |
+| `Ctrl+Alt+R` | 🔄 Reset Terminal | Clear & refresh current terminal |
+
+### 🔄 Backup: Traditional tmux Navigation
 | Key | Action |
 |-----|--------|
 | `Ctrl+b, s` | Visual session list |
-| `Ctrl+b, 1-7` | Switch to console 1-7 |
+| `Ctrl+b, 1-10` | Switch to console 1-10 |
 | `Ctrl+b, (` | Previous session |
 | `Ctrl+b, )` | Next session |
 | `Ctrl+b, L` | Last used session |
@@ -227,17 +237,17 @@ tmux-persistent-console/
 ### Manual Installation
 ```bash
 # Clone repository
-git clone https://github.com/YOUR_USERNAME/tmux-persistent-console.git
+git clone https://github.com/zentala/tmux-persistent-console.git
 cd tmux-persistent-console
 
 # Install
 ./install.sh
 
-# Or copy files manually
-cp src/tmux.conf ~/.tmux.conf
-cp src/setup.sh ~/bin/setup-console-sessions
-cp src/connect.sh ~/bin/connect-console
-chmod +x ~/bin/*
+# Or copy files manually to ~/.vps/sessions/
+mkdir -p ~/.vps/sessions
+cp -r src/* ~/.vps/sessions/
+chmod +x ~/.vps/sessions/*.sh
+ln -s ~/.vps/sessions/connect.sh /usr/local/bin/connect-console
 ```
 
 ### Auto-Start on System Boot (Systemd)
@@ -382,6 +392,26 @@ See [`tests/README.md`](tests/README.md) for detailed testing documentation.
 
 **🎉 Test your tmux-persistent-console setup risk-free on real cloud infrastructure!**
 
+## 📐 Project Specification
+
+This project follows **spec-driven development**. All features and behavior are documented in:
+
+**[SPEC.md](SPEC.md)** - Complete unified specification
+- F-key bindings and behavior
+- Active vs suspended terminals
+- Manager Menu (F11) specification
+- Help Reference (F12) specification
+- Status bar design
+- Icons and iconography
+
+**For contributors:** Please read SPEC.md before making changes.
+
+**See also:**
+- `docs/naming.md` - Naming conventions (pTTY/ptty/PersistentTTY)
+- `docs/ICONS.md` - Icon reference and usage
+- `ARCHITECTURE.md` - Technical architecture details
+- `CLAUDE.md` - AI assistant development guidelines
+
 ## 🔗 Related Projects
 
 - [tmux](https://github.com/tmux/tmux) - Terminal multiplexer
@@ -393,3 +423,6 @@ See [`tests/README.md`](tests/README.md) for detailed testing documentation.
 **⭐ Star this repo if it saved your work from an SSH crash!**
 
 Made with ❤️ for remote workers, sysadmins, and AI CLI enthusiasts.
+
+**Note from the author:**
+This tool was born from my personal frustration with losing SSH sessions during unstable WiFi, laptop sleep, or moving between locations. I wanted something that "just works" without complex configuration. I'm not a tmux expert, but I value good developer experience (DevEx). If you find bugs or have ideas, contributions are welcome! We use conventional commits and encourage working with Claude Code via CLAUDE.md.
