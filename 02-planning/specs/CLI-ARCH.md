@@ -1,7 +1,11 @@
-# pTTY - CLI Architecture (v3)
+**Purpose:** CLI command architecture for v2.0+ scriptable interface
+
+---
+
+# pTTY - CLI Architecture (v2.0+)
 
 **Date:** 2025-10-08
-**Status:** Design only - implement in v3
+**Status:** Design only - implement in v2.0+
 
 ---
 

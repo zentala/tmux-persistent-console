@@ -1,6 +1,10 @@
-# Task 014: Refactor UI Components
+**Purpose:** Extract reusable UI components from monolithic Manager and Help scripts
 
-**Phase:** v1.5 Refactoring
+---
+
+# Task 002: Refactor UI Components
+
+**Phase:** v0.2 Refactoring
 **Priority:** High
 **Estimated Time:** 2-3 days
 **Dependencies:** 013 (State management complete)

@@ -1,6 +1,10 @@
-# Task 016: Testing Framework Setup
+**Purpose:** Setup automated testing framework using bats with mock tmux and test infrastructure
 
-**Phase:** v1.5 Refactoring
+---
+
+# Task 004: Testing Framework Setup
+
+**Phase:** v0.2 Refactoring
 **Priority:** High
 **Estimated Time:** 2 days
 **Dependencies:** 013, 014, 015 (Core modules refactored)

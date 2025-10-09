@@ -1,6 +1,10 @@
-# Task 017: Code Standards Document
+**Purpose:** Create comprehensive code standards document for naming, documentation, and best practices
 
-**Phase:** v1.5 Refactoring
+---
+
+# Task 005: Code Standards Document
+
+**Phase:** v0.2 Refactoring
 **Priority:** High
 **Estimated Time:** 1 day
 **Dependencies:** 013, 014, 015, 016 (Refactoring complete)

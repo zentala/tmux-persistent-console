@@ -1,3 +1,7 @@
+**Purpose:** Safe exit wrapper specification to prevent accidental tmux session termination
+
+---
+
 # Safe Exit - Ochrona przed przypadkowym zabiciem sesji tmux
 
 ## Problem

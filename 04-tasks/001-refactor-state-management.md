@@ -1,6 +1,10 @@
-# Task 013: Refactor State Management Layer
+**Purpose:** Extract console state management into dedicated, testable module with caching
 
-**Phase:** v1.5 Refactoring
+---
+
+# Task 001: Refactor State Management Layer
+
+**Phase:** v0.2 Refactoring
 **Priority:** Critical
 **Estimated Time:** 2-3 days
 **Dependencies:** v1.0 complete (001-012)
