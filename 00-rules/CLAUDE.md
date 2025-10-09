@@ -47,10 +47,15 @@ Manual testing protocol and checklist
 
 ---
 
-### **CODE-STANDARDS.md** - Coding Conventions ⏳ Future
+### **[CODE-STANDARDS.md](CODE-STANDARDS.md)** - Coding Conventions ✅ COMPLETE
 Naming, documentation, error handling patterns
 
-**Status:** Task 005 in progress
+**Key rules:**
+- Functions: verb_noun_modifier()
+- Variables: lowercase_with_underscores
+- Strict mode: `set -euo pipefail`
+- All functions documented with docstrings
+- Error messages to stderr with ERROR: prefix
 
 ---
 
