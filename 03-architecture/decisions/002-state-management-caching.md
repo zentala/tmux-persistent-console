@@ -209,3 +209,19 @@ console-3 12347
 ---
 
 **This decision balances performance and accuracy for v0.2. Future versions may optimize further based on real-world usage.**
+
+---
+
+## Used In
+
+- **[STATUS-BAR-SPEC](../../02-planning/specs/STATUS-BAR-SPEC.md):** Status bar reads from cached state
+- **[MANAGER-SPEC](../../02-planning/specs/MANAGER-SPEC.md):** Manager displays cached console states
+
+## Affects Tasks
+
+- **[Task 001](../../04-tasks/001-refactor-state-management.md):** State management module (implements 5s TTL cache)
+
+## Related Specs
+
+- [STATUS-BAR-SPEC.md](../../02-planning/specs/STATUS-BAR-SPEC.md) - Uses cached state for display
+- [MANAGER-SPEC.md](../../02-planning/specs/MANAGER-SPEC.md) - Queries state cache

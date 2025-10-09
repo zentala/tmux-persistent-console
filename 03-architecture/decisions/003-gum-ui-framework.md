@@ -286,3 +286,19 @@ fi
 ---
 
 **Gum provides professional TUI with minimal code, aligning perfectly with pTTY's "Low-Code, High-Impact" philosophy.**
+
+---
+
+## Used In
+
+- **[MANAGER-SPEC](../../02-planning/specs/MANAGER-SPEC.md):** F11 Manager interface implementation
+- **[HELP-SPEC](../../02-planning/specs/HELP-SPEC.md):** F12 Help system implementation
+
+## Affects Tasks
+
+- **[Task 002](../../04-tasks/002-refactor-ui-components.md):** UI components (must follow gum patterns with fallback)
+
+## Related Specs
+
+- [MANAGER-SPEC.md](../../02-planning/specs/MANAGER-SPEC.md) - Manager implementation using gum
+- [HELP-SPEC.md](../../02-planning/specs/HELP-SPEC.md) - Help system using gum

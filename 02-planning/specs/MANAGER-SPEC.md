@@ -393,3 +393,19 @@ get_console_state() {
 ---
 
 **END OF MANAGER SPECIFICATION**
+
+---
+
+## Related Architecture Decisions
+
+- **[ADR 003](../../03-architecture/decisions/003-gum-ui-framework.md):** Gum UI Framework - Why gum for F11 Manager
+- **[ADR 005](../../03-architecture/decisions/005-no-external-scripts-statusbar.md):** No External Scripts - Exception for F11 (interactive UI allowed)
+
+## Implementation Status
+
+- [x] **v0.1** - Prototype in `src/mission-control.sh` (monolithic)
+- [ ] **v0.2** - Refactored in `src/ui/manager/` (Task 002)
+
+## Related Tasks
+
+- **[Task 002](../../04-tasks/002-refactor-ui-components.md):** UI Components refactoring (implements this spec)

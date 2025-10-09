@@ -320,3 +320,20 @@ tmux set -g status-interval 0
 ---
 
 **⚠️ CRITICAL RULE: External scripts in status bar = guaranteed flicker. Use native tmux formats ONLY.**
+
+---
+
+## Used In
+
+- **[STATUS-BAR-SPEC](../../02-planning/specs/STATUS-BAR-SPEC.md):** Status bar uses ONLY native tmux formats (no scripts)
+- **[MANAGER-SPEC](../../02-planning/specs/MANAGER-SPEC.md):** Exception - Manager can use external scripts (interactive UI)
+
+## Affects Tasks
+
+- **[Task 001](../../04-tasks/001-refactor-state-management.md):** State module cannot be called from status bar directly
+- **[Task 002](../../04-tasks/002-refactor-ui-components.md):** UI components CAN use external scripts (not status bar)
+
+## Related Specs
+
+- [STATUS-BAR-SPEC.md](../../02-planning/specs/STATUS-BAR-SPEC.md) - Must follow this rule (no external scripts)
+- [MANAGER-SPEC.md](../../02-planning/specs/MANAGER-SPEC.md) - Exception (interactive takeover, not status bar)
