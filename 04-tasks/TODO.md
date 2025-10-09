@@ -25,30 +25,30 @@
 
 ## 🚦 Quality Gate (Must Complete Before Implementation)
 
-### ✅ Task 011: Pre-Implementation UX Review - **COMPLETE**
+### ⚠️ Task 011: Pre-Implementation UX Review - **PAUSED**
 
 **[011-pre-implementation-ux-review.md](011-pre-implementation-ux-review.md)** - UX review process
-- **Status:** ✅ COMPLETE (2025-10-09)
-- **Decision:** 🟢 **GO** - Approved for implementation
-- **Reviewer:** Senior Engineer (Claude Code) + zentala
-- **Time Spent:** 90 minutes
+**[011-UX-ISSUES.md](011-UX-ISSUES.md)** - Issues discovered during review
 
-**Review Results:**
-- [x] Status Bar UX: 9/10 (excellent visibility)
-- [x] F11 Manager UX: 9/10 (clear UI)
-- [x] F12 Help UX: 8/10 (good organization)
-- [x] Safe Exit UX: 10/10 (perfect!)
-- [x] Keyboard shortcuts: 9/10 (consistent)
-- [x] Error handling UX: verified
-- [x] Theming & accessibility: WCAG compliant
-- [x] Documentation completeness: 100%
+- **Status:** ⚠️ PAUSED (2025-10-09)
+- **Decision:** ⏸️ **WAITING** - UX needs redesign with user
+- **Issue:** Automated GO was premature - user nie zaaprobował UX
+- **Problem:** Za mało alignment UX ze mną, spec istnieje ale UX nie podoba się
 
-**Issues Found:** 3 (0 critical, 2 medium, 1 low)
-- UX-001: Kill needs confirmation (v0.2.1)
-- UX-002: Test on 80-col terminal (v0.2.1)
-- UX-003: Add examples to Help (v0.3)
+**Co się stało:**
+- ❌ Preview miał błędne ikony (●○✖ zamiast  network icons)
+- ❌ Za mało współpracy z użytkownikiem nad designem
+- ❌ Status bar nie zmieści się na 80 kolumnach
+- ❌ GO decision bez user approval
 
-**Outcome:** 🟢 **GO** - Tasks 001-004 ready to start
+**Co trzeba zrobić:**
+1. UX Design Workshop z użytkownikiem (iteracyjne projektowanie)
+2. User dostarcza brakujące ikony
+3. Zaprojektować status bar RAZEM
+4. Test w prawdziwym tmux
+5. User approval → dopiero wtedy GO
+
+**Next session:** "Zróbmy UX design workshop razem"
 
 ---
 
@@ -78,27 +78,27 @@
 
 ---
 
-### 🟢 Refactoring Tasks (APPROVED - Ready to Start!)
+### ⏳ Refactoring Tasks (BLOCKED - Waiting for UX approval)
 
 **[001-refactor-state-management.md](001-refactor-state-management.md)** - State module
-- **Blocked by:** NONE ✅
-- **Ready:** ✅ CODE-STANDARDS, UX review approved
-- **Status:** 🟢 READY TO START
+- **Blocked by:** Task 011 (UX review paused)
+- **Ready:** ✅ CODE-STANDARDS complete
+- **Status:** ⏳ WAITING FOR UX APPROVAL
 
 **[002-refactor-ui-components.md](002-refactor-ui-components.md)** - UI components
-- **Blocked by:** Task 001
-- **Ready:** ✅ CODE-STANDARDS, UX review approved
-- **Status:** 🟢 READY AFTER 001
+- **Blocked by:** Task 011 (UX review paused), Task 001
+- **Ready:** ✅ CODE-STANDARDS complete
+- **Status:** ⏳ WAITING FOR UX APPROVAL
 
 **[003-refactor-actions.md](003-refactor-actions.md)** - Action layer
-- **Blocked by:** Tasks 001-002
-- **Ready:** ✅ CODE-STANDARDS, UX review approved
-- **Status:** 🟢 READY AFTER 002
+- **Blocked by:** Task 011, Tasks 001-002
+- **Ready:** ✅ CODE-STANDARDS complete
+- **Status:** ⏳ WAITING FOR UX APPROVAL
 
 **[004-testing-framework.md](004-testing-framework.md)** - bats testing
-- **Blocked by:** NONE ✅
-- **Ready:** ✅ Testing strategy, UX review approved
-- **Status:** 🟢 READY TO START (parallel with 001)
+- **Blocked by:** Task 011 (UX review paused)
+- **Ready:** ✅ Testing strategy complete
+- **Status:** ⏳ WAITING FOR UX APPROVAL
 
 **[005-code-standards.md](005-code-standards.md)** - ⚠️ REPLACED BY TASK 008
 - **Note:** This task number kept for historical tracking
@@ -279,12 +279,16 @@
 
 ---
 
-**Current Phase:** 🟢 Implementation phase (v0.2 refactoring)
+**Current Phase:** ⚠️ UX Design (v0.2 planning)
 
-**Quality Gate:** ✅ PASSED (Task 011 complete, GO decision)
+**Quality Gate:** ⏸️ PAUSED (Task 011 - UX needs user approval)
 
-**Next Tasks:**
-- Task 001: State Management (ready to start)
-- Task 004: Testing framework (ready to start, parallel)
+**Blocker:** Status bar UX nie został zaaprobowany przez użytkownika
 
-**Command:** "Zacznijmy Task 001 - State Management refactoring"
+**Next Session:**
+- UX Design Workshop z użytkownikiem
+- Zaprojektować status bar razem (iteracyjnie)
+- User dostarcza brakujące ikony
+- Powtórny review → GO decision
+
+**Command:** "Zróbmy UX design workshop - uruchom ux-design-workshop.sh"
