@@ -278,3 +278,15 @@ src/ui/status-bar/
 ---
 
 **Shell variables provide the simplest theming solution for v0.2. External config files may come in v1.0+ if user demand exists.**
+
+---
+
+## Used In
+
+- **[STATUS-BAR-SPEC](../../02-planning/specs/STATUS-BAR-SPEC.md):** Status bar colors and icons use theme variables
+- **[ICONS-SPEC](../../02-planning/specs/ICONS-SPEC.md):** Icon definitions stored as theme variables
+
+## Affects Tasks
+
+- **[Task 001](../../04-tasks/001-refactor-state-management.md):** State module may use theme constants
+- **[Task 002](../../04-tasks/002-refactor-ui-components.md):** UI components use theme variables for display

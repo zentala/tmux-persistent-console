@@ -623,3 +623,20 @@ set -g mouse on
 Status bar is the primary UI - must be perfect!
 All changes to status bar MUST reference this spec.
 All new features MUST consider impact on status bar layout.
+
+---
+
+## Related Architecture Decisions
+
+- **[ADR 002](../../03-architecture/decisions/002-state-management-caching.md):** State Caching - Status bar reads from 5s TTL cache
+- **[ADR 004](../../03-architecture/decisions/004-theme-shell-vars.md):** Theme Variables - Colors/icons defined as shell variables
+- **[ADR 005](../../03-architecture/decisions/005-no-external-scripts-statusbar.md):** ⚠️ CRITICAL - NO external scripts in status bar (use native tmux formats only)
+
+## Implementation Status
+
+- [x] **v0.1** - Prototype using native tmux format strings (no flicker)
+- [ ] **v0.2** - Enhanced with state module integration (Task 001)
+
+## Related Tasks
+
+- **[Task 001](../../04-tasks/001-refactor-state-management.md):** State management (provides cached data for status bar)
