@@ -10,6 +10,8 @@
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Main technical design document
 - **[ARCHITECTURE-ANALYSIS.md](ARCHITECTURE-ANALYSIS.md)** - Architecture analysis and recommendations
 - **[NAMING.md](NAMING.md)** - Naming conventions and brand identity
+- **[testing-strategy.md](testing-strategy.md)** - Testing strategy and coverage goals
+- **[DOCUMENTATION-REVIEW.md](DOCUMENTATION-REVIEW.md)** - Documentation quality review (7.5/10)
 
 ### Architecture Decision Records ([decisions/](decisions/))
 - **[001-folder-structure.md](decisions/001-folder-structure.md)** - Lifecycle-based folder organization
