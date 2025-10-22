@@ -228,6 +228,43 @@ readonly TEMP_DIR="${HOME}/.cache/tmux-console"
 
 ## Testing Requirements
 
+### Status Bar Testing (CRITICAL)
+
+**⚠️ ALWAYS test status bar changes before committing!**
+
+**Problem:** Tmux color format bugs (commas in conditionals) cause visual glitches.
+
+**Quick Test:**
+```bash
+# 1. Load config
+tmux source-file ~/.vps/sessions/src/tmux.conf
+
+# 2. Check if colors parse correctly (NO "colory" or broken brackets)
+tmux show-options -g status-right | head -c 200
+
+# 3. Visual check in CLEAN session
+tmux new-session -d -s test-visual
+tmux attach -t test-visual
+# Type: clear
+# Look at bottom: should see "󰢩 F1  F2..." with ONE highlighted
+
+# 4. Run automated test (expects Claude Code NOT running)
+bash tests/test-status-bar.sh
+```
+
+**Common Bugs:**
+- ❌ `#[fg=colour39,bg=colour236]` in conditionals → BREAKS (comma conflicts)
+- ✅ `#[fg=colour39]#[bg=colour236]` → WORKS (separate blocks)
+- ❌ Testing in Claude Code session → false positives (history pollution)
+- ✅ Testing in clean `tmux new-session` → accurate
+
+**Files to check:**
+- `src/status-format-v4.tmux` - main status bar definition
+- `src/tmux.conf` - loads status-format-v4.tmux
+- `tests/test-status-bar.sh` - automated verification
+
+---
+
 ### Manual Testing Protocol
 
 Before committing changes to safe-exit.sh:

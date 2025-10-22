@@ -109,30 +109,100 @@
 ### Complete Status Bar Layout
 
 ```
-[ (icon) pTTY ][ (icon) {user} @ (icon) {hostname} ]  (icon) F1  (icon) F2 ... (icon) F7  (empty_icon) F8-10  (manager_icon) F11 Manager  (help_icon) F12 Help
+[ 󰢩 pTTY ][ 󰀉 user @ server ]  󰢩 F1  󰢩 F2  󰢩 F3  󰢩 F4  󰢩 F5   F6   F7   F8-10   F11   F12
+                                 \______/  \____/  \____/  \_____/  \______/  \______/  \______/
+                                  active    avail   avail    susp    manager    help
 ```
+
+**Note:** Active tab (e.g., "󰢩 F1") has shadow/depth effect with background highlighting
 
 ### Status Bar Zones
 
-**Left zone:**
-- Application branding: `[ pTTY ]`
-- User/host info: `[ zentala @ contabo ]`
+**Left zone (fixed):**
+- Application branding: `[ 󰢩 pTTY ]` - Icon + brand name
+- User/host info: `[ 󰀉 zentala @  contabo ]` - User icon + username + server icon + hostname
 
-**Center/Right zone:**
-- Active consoles: F1-F5 (with terminal icons)
-- Suspended consoles: F6-F7 (with terminal icons, maybe dimmed)
-- Suspended range: F8-10 (collapsed, with empty/dimmed icon)
-- Manager: F11 (with manager icon)
-- Help: F12 (with help icon)
+**Center/Right zone (dynamic):**
+- **Sessions F1-F10**: Icon + key label (e.g., `󰢩 F1`, `󰢩 F2`, ` F6`)
+- **Grouping**: Consecutive suspended sessions collapse (e.g., ` F8-10` if F8/F9/F10 all suspended)
+- **Manager (F11)**: ` F11` - Icon + label
+- **Help (F12)**: ` F12` - Icon + label
 
-### Visual Requirements
+### Session Tab Format
 
-- **Tabs with shadows** - Status bar items should look like tabs with shadow effects
-- **Active console highlighted** - Current session stands out visually
-- **Icons from Nerd Fonts** - Assume user has NF installed
-- **Fallback option** - Consider icon-free version for users without NF (future)
+**Individual tab structure:**
+```
+<icon> F<number>
+```
 
-**TODO:** Detailed status bar implementation in separate task/spec
+**Examples:**
+- Active session: `󰢩 F1` (cyan, highlighted background with shadow)
+- Available session: `󰢩 F2` (white, normal background)
+- Suspended session: ` F6` (dark gray, no background)
+- Grouped suspended: ` F8-10` (dark gray, collapsed range)
+
+### Visual States
+
+**Session states (color + icon):**
+
+| State | Color | Icon | Description |
+|-------|-------|------|-------------|
+| **Active** | `colour39` (cyan) | 󰢩 | Currently focused session - NO BOLD |
+| **Available** | `colour255` (white) | 󰢩 | Created session, idle |
+| **Suspended** | `colour240` (dark gray) |  | Not created yet, available on demand |
+| **Crashed** | `colour196` (red) |  | Session killed/crashed |
+
+**Special elements (F11/F12):**
+
+| Element | Color | Icon | Label |
+|---------|-------|------|-------|
+| **Manager** | `colour255` (white) |  | F11 |
+| **Help** | `colour255` (white) |  | F12 |
+
+### Background & Shadow Effects
+
+**Background colors:**
+- Status bar background: `colour234` (lighter gray)
+- Session terminal background: `colour235` (darker gray)
+- Active tab background: `colour236` (medium gray)
+
+**Active tab shadow/depth:**
+```tmux
+# Active tab with shadow effect:
+#[fg=colour236,bg=colour234]  #[fg=colour39,bg=colour236] 󰢩 1 #[fg=colour236,bg=colour234]
+  └─ left shadow            └─ tab content            └─ right shadow
+```
+
+**Non-active tabs (no shadow):**
+```tmux
+# Available/suspended tabs (flat):
+#[fg=colour255,bg=colour234] 󰢩 2
+#[fg=colour240,bg=colour234]  6
+```
+
+### Icon Reference
+
+**All icons from:** `docs/ICONS-NETWORK-SET.md` (network theme only)
+
+**Theme configuration:** `src/theme-config.sh`
+
+**Icon variables:**
+- `$ICON_SESSION_ACTIVE` = 󰢩 (nf-md-console_network, f08a9)
+- `$ICON_SESSION_AVAILABLE` = 󰢩 (nf-md-console_network, f08a9)
+- `$ICON_SESSION_SUSPENDED` =  (nf-md-network_outline, f0c9d)
+- `$ICON_SESSION_CRASHED` =  (nf-md-close_network, f015b)
+- `$ICON_MANAGER` =  (nf-md-network_pos, f1acb)
+- `$ICON_HELP` =  (nf-md-help_network, f06f5)
+
+**Fallback mode (non-NF):** See `src/theme-config.sh` for ASCII replacements
+
+### Implementation Requirements
+
+1. **NO FLICKER** - Use native tmux format strings only (NO external scripts)
+2. **Dynamic session detection** - Show/hide tabs based on session existence
+3. **Auto-grouping** - Collapse consecutive suspended sessions (F8-F10 → ` 8-10`)
+4. **Shadow effect** - Active tab has subtle 3D depth using background colors
+5. **Responsive layout** - Adjust spacing based on terminal width (future)
 
 ---
 
