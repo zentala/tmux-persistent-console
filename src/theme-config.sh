@@ -21,13 +21,13 @@ export ICON_SERVER=""             # Custom - not in network set (fallback to gen
 
 # Terminal Session States
 export ICON_SESSION_ACTIVE="󰢩"    # nf-md-console_network (f08a9) - currently active
-export ICON_SESSION_AVAILABLE="󰢩"  # nf-md-console_network (f08a9) - created, idle (same as active)
-export ICON_SESSION_SUSPENDED=""  # nf-md-network_outline (f0c9d) - not created yet
-export ICON_SESSION_CRASHED=""    # nf-md-close_network (f015b) - killed/crashed
+export ICON_SESSION_AVAILABLE="󰱠"  # nf-md-console_network_outline (f0c60) - created, idle
+export ICON_SESSION_SUSPENDED="󰲝"  # nf-md-network_outline (f0c9d) - not created yet
+export ICON_SESSION_CRASHED="󰱟"    # nf-md-close_network_outline (f0c5f) - killed/crashed
 
 # Special Functions
-export ICON_MANAGER=""            # nf-md-network_pos (f1acb) - F11 Manager
-export ICON_HELP=""               # nf-md-help_network (f06f5) - F12 Help
+export ICON_MANAGER="󱫋"            # nf-md-network_pos (f1acb) - F11 Manager
+export ICON_HELP="󰲊"               # nf-md-help_network_outline (f0c8a) - F12 Help
 
 # Additional UI Elements (future use)
 export ICON_DOWNLOAD=""           # nf-md-download_network (f06f4)

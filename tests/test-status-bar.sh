@@ -33,66 +33,67 @@ check_status_bar() {
 
     echo -e "${YELLOW}🔍 Testing: $test_name${NC}"
 
-    # Capture full pane content
-    local pane_content=$(tmux capture-pane -t "$session_name" -p -S - -E -)
+    # Get status bar configuration (not pane content - status bar is separate!)
+    local status_right=$(tmux show-options -gqv status-right)
+    local status_position=$(tmux show-options -gqv status-position)
 
     # Get terminal height
     local term_height=$(tmux display-message -p -t "$session_name" '#{pane_height}')
 
-    # Get last 5 lines to check status bar position
-    local last_lines=$(echo "$pane_content" | tail -5)
-
     # Count occurrences of status bar indicators
-    local f1_count=$(echo "$pane_content" | grep -c "F1" || true)
-    local f7_count=$(echo "$pane_content" | grep -c "F7" || true)
-    local console_count=$(echo "$pane_content" | grep -c "console-" || true)
+    local f1_count=$(echo "$status_right" | grep -c "F1" || true)
+    local f7_count=$(echo "$status_right" | grep -c "F7" || true)
+    local f12_count=$(echo "$status_right" | grep -c "F12" || true)
 
     echo "   Terminal height: $term_height"
+    echo "   Status position: $status_position"
     echo "   F1 occurrences: $f1_count"
     echo "   F7 occurrences: $f7_count"
-    echo "   'console-' occurrences: $console_count"
+    echo "   F12 occurrences: $f12_count"
 
     local errors=0
 
-    # Test 1: Status bar should appear EXACTLY ONCE
-    if [ "$f1_count" -ne 1 ] || [ "$f7_count" -ne 1 ]; then
-        echo -e "   ${RED}❌ FAIL: Status bar appears multiple times or not at all${NC}"
-        echo "      Expected: F1=1, F7=1"
-        echo "      Got: F1=$f1_count, F7=$f7_count"
+    # Test 1: Icon count verification (12 total: 10 consoles + F11 + F12)
+    local icon_count=$(echo "$status_right" | grep -oE "󰢩|󰲝|󱫋|󰲊" | wc -l)
+    if [ "$icon_count" -lt 12 ]; then
+        echo -e "   ${RED}❌ FAIL: Missing icons in status bar${NC}"
+        echo "      Expected: 12 icons total (F1-F10 + F11 + F12)"
+        echo "      Got: $icon_count icons"
         ((errors++))
     else
-        echo -e "   ${GREEN}✅ PASS: Status bar appears exactly once${NC}"
+        echo -e "   ${GREEN}✅ PASS: Icons present ($icon_count total)${NC}"
     fi
 
-    # Test 2: Status bar should be in LAST 3 LINES (bottom of screen)
-    local f1_in_bottom=$(echo "$last_lines" | grep -c "F1" || true)
-    if [ "$f1_in_bottom" -ne 1 ]; then
+    # Test 2: Status bar position should be 'bottom'
+    if [ "$status_position" != "bottom" ]; then
         echo -e "   ${RED}❌ FAIL: Status bar not at bottom of screen${NC}"
-        echo "      Status bar should be in last 3 lines"
+        echo "      Expected: status-position = bottom"
+        echo "      Got: status-position = $status_position"
         ((errors++))
     else
         echo -e "   ${GREEN}✅ PASS: Status bar is at bottom${NC}"
     fi
 
-    # Test 3: Status bar should contain ALL session indicators F1-F7
+    # Test 3: Status bar should contain ALL session indicators F1-F12
     local has_all_sessions=1
-    for i in {1..7}; do
-        if ! echo "$pane_content" | grep -q "F$i"; then
+    for i in {1..12}; do
+        if ! echo "$status_right" | grep -q " F$i "; then
             echo -e "   ${RED}❌ FAIL: Missing F$i indicator${NC}"
             has_all_sessions=0
             ((errors++))
         fi
     done
     if [ "$has_all_sessions" -eq 1 ]; then
-        echo -e "   ${GREEN}✅ PASS: All 7 session indicators present${NC}"
+        echo -e "   ${GREEN}✅ PASS: All 12 session indicators present (F1-F12)${NC}"
     fi
 
-    # Test 4: Current session should be highlighted
-    local current_highlighted=$(tmux show-options -gqv status-format[0] | grep -c "colour39" || true)
+    # Test 4: Current session should be highlighted (colour39 = cyan)
+    local current_highlighted=$(echo "$status_right" | grep -c "colour39" || true)
     if [ "$current_highlighted" -eq 0 ]; then
-        echo -e "   ${YELLOW}⚠️  WARNING: Active session may not be highlighted${NC}"
+        echo -e "   ${RED}❌ FAIL: No active session highlighting found${NC}"
+        ((errors++))
     else
-        echo -e "   ${GREEN}✅ PASS: Active session highlighted${NC}"
+        echo -e "   ${GREEN}✅ PASS: Active session highlighting configured (colour39)${NC}"
     fi
 
     echo ""

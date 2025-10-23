@@ -101,6 +101,15 @@ All conflicts MUST be resolved by updating SPEC.md first.
 - **CLI/filesystem:** ptty (lowercase)
 - **See:** `docs/naming.md` for complete naming conventions
 
+### ⚠️ CRITICAL: Icon Source of Truth
+**ALWAYS use icons from:** `docs/ICONS-NETWORK-SET.md` (lines 130-141)
+
+All implementations MUST follow this canonical mapping:
+- Active: 󰢩 (f08a9), Available: 󰱠 (f0c60), Suspended: 󰲝 (f0c9d)
+- Manager: 󱫋 (f1acb), Help: 󰲊 (f0c8a)
+
+**See:** `04-tasks/ICON-MAPPING-SOURCE-OF-TRUTH.md` for enforcement rules
+
 ### Terminal Configuration
 - **5 active consoles by default** (F1-F5) - created on startup
 - **5 suspended consoles available** (F6-F10) - created on demand

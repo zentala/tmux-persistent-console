@@ -148,16 +148,16 @@
 | State | Color | Icon | Description |
 |-------|-------|------|-------------|
 | **Active** | `colour39` (cyan) | 󰢩 | Currently focused session - NO BOLD |
-| **Available** | `colour255` (white) | 󰢩 | Created session, idle |
-| **Suspended** | `colour240` (dark gray) |  | Not created yet, available on demand |
-| **Crashed** | `colour196` (red) |  | Session killed/crashed |
+| **Available** | `colour255` (white) | 󰱠 | Created session, idle |
+| **Suspended** | `colour240` (dark gray) | 󰲝 | Not created yet, available on demand |
+| **Crashed** | `colour196` (red) | 󰱟 | Session killed/crashed |
 
 **Special elements (F11/F12):**
 
 | Element | Color | Icon | Label |
 |---------|-------|------|-------|
-| **Manager** | `colour255` (white) |  | F11 |
-| **Help** | `colour255` (white) |  | F12 |
+| **Manager** | `colour255` (white) | 󱫋 | F11 |
+| **Help** | `colour255` (white) | 󰲊 | F12 |
 
 ### Background & Shadow Effects
 
@@ -188,11 +188,11 @@
 
 **Icon variables:**
 - `$ICON_SESSION_ACTIVE` = 󰢩 (nf-md-console_network, f08a9)
-- `$ICON_SESSION_AVAILABLE` = 󰢩 (nf-md-console_network, f08a9)
-- `$ICON_SESSION_SUSPENDED` =  (nf-md-network_outline, f0c9d)
-- `$ICON_SESSION_CRASHED` =  (nf-md-close_network, f015b)
-- `$ICON_MANAGER` =  (nf-md-network_pos, f1acb)
-- `$ICON_HELP` =  (nf-md-help_network, f06f5)
+- `$ICON_SESSION_AVAILABLE` = 󰱠 (nf-md-console_network_outline, f0c60)
+- `$ICON_SESSION_SUSPENDED` = 󰲝 (nf-md-network_outline, f0c9d)
+- `$ICON_SESSION_CRASHED` = 󰱟 (nf-md-close_network_outline, f0c5f)
+- `$ICON_MANAGER` = 󱫋 (nf-md-network_pos, f1acb)
+- `$ICON_HELP` = 󰲊 (nf-md-help_network_outline, f0c8a)
 
 **Fallback mode (non-NF):** See `src/theme-config.sh` for ASCII replacements
 

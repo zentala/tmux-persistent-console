@@ -50,6 +50,7 @@
 | Icon | Name | Code | Hex |
 |------|------|------|-----|
 | 󰢩 | nf-md-console_network | f08a9 | U+F08A9 |
+| 󰱠 | nf-md-console_network_outline | f0c60 | U+F0C60 |
 
 ### Data Transfer
 
@@ -70,6 +71,7 @@
 | Icon | Name | Code | Hex |
 |------|------|------|-----|
 |  | nf-md-help_network | f06f5 | U+F06F5 |
+| 󰲊 | nf-md-help_network_outline | f0c8a | U+F0C8A |
 
 ### Network Management
 
@@ -104,6 +106,7 @@
 
 | Icon | Name | Code | Hex |
 |------|------|------|-----|
+| 󰱟 | nf-md-close_network_outline | f0c5f | U+F0C5F |
 |  | nf-md-minus_network_outline | f0c9a | U+F0C9A |
 |  | nf-md-network_off_outline | f0c9c | U+F0C9C |
 |  | nf-md-play_network_outline | f0cb7 | U+F0CB7 |
@@ -132,13 +135,13 @@
 
 ### Terminal States
 - **Active Session**: 󰢩 `nf-md-console_network` (f08a9)
-- **Available/Idle**: 󰢩 `nf-md-console_network` (f08a9)
-- **Suspended**:  `nf-md-network_outline` (f0c9d)
-- **Crashed/Killed**:  `nf-md-close_network` (f015b)
+- **Available/Idle**: 󰱠 `nf-md-console_network_outline` (f0c60)
+- **Suspended**: 󰲝 `nf-md-network_outline` (f0c9d)
+- **Crashed/Killed**: 󰱟 `nf-md-close_network_outline` (f0c5f)
 
 ### Special Functions
-- **Manager (F11)**:  `nf-md-network_pos` (f1acb)
-- **Help (F12)**:  `nf-md-help_network` (f06f5)
+- **Manager (F11)**: 󱫋 `nf-md-network_pos` (f1acb)
+- **Help (F12)**: 󰲊 `nf-md-help_network_outline` (f0c8a)
 
 ---
 
