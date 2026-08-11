@@ -11,3 +11,6 @@
 # === Git worktrees (parallel branch checkouts, NOT branch content) ===
 .claude/worktrees/
 .claude-worktrees/
+
+# === Private planning repo (nested git, never published) ===
+.plan/
