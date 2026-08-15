@@ -498,14 +498,18 @@ else
         exit 1
     fi
 
-    # And verify the sessions it claims to manage actually exist
-    if ! tmux ls 2>/dev/null | grep -q "^console-1:"; then
-        echo -e "${RED}❌ Service active but no console-* sessions found${NC}"
+    # And verify the sessions it claims to manage actually exist.
+    # Run setup.sh idempotently first: on upgrades from the old 5-session
+    # layout the service is already active but console-6..10 are missing.
+    bash "$INSTALL_DIR/setup.sh" >/dev/null 2>&1 || true
+    SESSION_COUNT=$(tmux ls 2>/dev/null | grep -c "^console-")
+    if [ "$SESSION_COUNT" -ne 10 ]; then
+        echo -e "${RED}❌ Service active but found $SESSION_COUNT/10 console sessions${NC}"
         echo -e "${RED}   Check setup.sh:  bash -x $INSTALL_DIR/setup.sh${NC}"
         exit 1
     fi
 
-    echo -e "${GREEN}✅ Service active, sessions verified${NC}"
+    echo -e "${GREEN}✅ Service active, 10 sessions verified${NC}"
 fi
 
 echo ""
