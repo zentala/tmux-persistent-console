@@ -26,7 +26,6 @@ build_session_list() {
         return 1
     fi
 
-    local idx=1
     while IFS= read -r session; do
         local status="○"  # foreground command is the login shell (idle)
         local windows=$(tmux list-windows -t "$session" 2>/dev/null | wc -l)
@@ -68,36 +67,7 @@ build_session_list() {
 
         # Output format: "marker status session fkey | window_info"
         printf "%s %s %-15s %s │ %s\n" "$marker" "$status" "$session" "$fkey" "$window_info"
-
-        idx=$((idx + 1))
     done <<< "$sessions"
-}
-
-# Preview pane content for selected session
-preview_session() {
-    local line="$1"
-    local session=$(echo "$line" | awk '{print $3}')
-
-    if [ -z "$session" ]; then
-        echo "Select a session to see preview"
-        return
-    fi
-
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "Session: $session"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-
-    # Show session info
-    tmux list-windows -t "$session" -F "Window #{window_index}: #{window_name} (#{window_panes} panes)" 2>/dev/null || echo "Session not found"
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "Current pane content:"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-
-    # Capture last 20 lines from current pane
-    tmux capture-pane -t "$session" -p -S -20 2>/dev/null || echo "(no content)"
 }
 
 # Restart session
@@ -255,10 +225,6 @@ show_mission_control() {
         esac
     fi
 }
-
-# Export for fzf callbacks
-export -f build_session_list
-export -f restart_session
 
 # Run mission control
 show_mission_control
