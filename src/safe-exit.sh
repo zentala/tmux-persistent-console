@@ -95,12 +95,11 @@ safe_exit() {
 
                     # Create secure temp directory if it doesn't exist
                     local temp_dir="${HOME}/.cache/tmux-console"
-                    if ! mkdir -p "$temp_dir" 2>/dev/null; then
+                    if ! (umask 077 && mkdir -p "$temp_dir") 2>/dev/null; then
                         echo "[ERROR] Failed to create temp directory"
                         sleep 2
                         continue  # Back to menu
                     fi
-                    chmod 700 "$temp_dir"
 
                     # Create secure temp file with mktemp
                     umask 077  # Only owner can read/write
@@ -164,8 +163,12 @@ exit 0
 RESTART_SCRIPT
                     chmod 700 "$restart_script"
 
-                    # Define lock file path
-                    local lock_file="$temp_dir/restart-${session_name}.lock"
+                    # Define lock file path. session_name comes from tmux and
+                    # may contain characters unsafe in a filesystem path
+                    # (e.g. "/", ".."); sanitize before building the path.
+                    # The real session_name is still used for tmux commands.
+                    local safe_session_name="${session_name//[^A-Za-z0-9_-]/_}"
+                    local lock_file="$temp_dir/restart-${safe_session_name}.lock"
 
                     # Run restart script in background with parameters (session_name, script_path, lock_file)
                     nohup "$restart_script" "$session_name" "$restart_script" "$lock_file" > /dev/null 2>&1 &
