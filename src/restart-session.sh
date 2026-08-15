@@ -17,11 +17,16 @@ fi
 
 # Create temp directory for restart scripts
 TEMP_DIR="${HOME}/.cache/tmux-console"
-mkdir -p "$TEMP_DIR" && chmod 700 "$TEMP_DIR"
+(umask 077 && mkdir -p "$TEMP_DIR")
 
 # Create background restart script
 RESTART_SCRIPT=$(mktemp "$TEMP_DIR/restart-XXXXXX.sh")
-LOCK_FILE="$TEMP_DIR/restart-${SESSION_NAME}.lock"
+# Session names come from tmux and may contain characters that are unsafe
+# in a filesystem path (e.g. "/", ".."); strip anything outside a safe set
+# before using it to build the lock file path. SESSION_NAME itself is left
+# unsanitized for the tmux commands below.
+SAFE_SESSION_NAME="${SESSION_NAME//[^A-Za-z0-9_-]/_}"
+LOCK_FILE="$TEMP_DIR/restart-${SAFE_SESSION_NAME}.lock"
 
 cat > "$RESTART_SCRIPT" << 'RESTART_SCRIPT_CONTENT'
 #!/bin/bash

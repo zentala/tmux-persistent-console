@@ -23,6 +23,29 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/session-list.sh
 source "$SCRIPT_DIR/lib/session-list.sh"
 
+# Preview mode: fzf invokes "$0 --preview <line>" to render the preview
+# pane for a candidate session and exits. Passing the line as an argv
+# element (rather than interpolating it into an inline "echo {} | awk ..."
+# shell string) means a hostile session name can only ever be seen as
+# $2, never as text that gets re-parsed by a shell.
+if [ "${1:-}" = "--preview" ]; then
+    preview_session=$(awk '{print $3}' <<< "${2:-}")
+    if [ -n "$preview_session" ]; then
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "Session: $preview_session"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        tmux list-windows -t "$preview_session" -F "Window #{window_index}: #{window_name} (#{window_panes} panes)" 2>/dev/null
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "Current pane:"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        tmux capture-pane -t "$preview_session" -p -S -15 2>/dev/null
+    fi
+    exit 0
+fi
+
 # Restart session
 restart_session() {
     local session="$1"
@@ -43,10 +66,15 @@ restart_session() {
 
     # Create temp script for background restart
     local temp_dir="${HOME}/.cache/tmux-console"
-    mkdir -p "$temp_dir" && chmod 700 "$temp_dir"
+    (umask 077 && mkdir -p "$temp_dir")
 
     local restart_script=$(mktemp "$temp_dir/restart-XXXXXX.sh")
-    local lock_file="$temp_dir/restart-${session}.lock"
+    # Session names come from tmux and may contain characters that are
+    # unsafe in a filesystem path (e.g. "/", ".."); strip anything outside
+    # a safe set before using it to build the lock file path. The real
+    # (unsanitized) name is still used for the tmux commands below.
+    local safe_session="${session//[^A-Za-z0-9_-]/_}"
+    local lock_file="$temp_dir/restart-${safe_session}.lock"
 
     cat > "$restart_script" << 'RESTART_SCRIPT'
 #!/bin/bash
@@ -104,23 +132,10 @@ show_mission_control() {
         return 1
     fi
 
-    # Create inline preview script
-    local preview_cmd='
-        session=$(echo {} | awk "{print \$3}")
-        if [ -n "$session" ]; then
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "Session: $session"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo ""
-            tmux list-windows -t "$session" -F "Window #{window_index}: #{window_name} (#{window_panes} panes)" 2>/dev/null
-            echo ""
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo "Current pane:"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-            echo ""
-            tmux capture-pane -t "$session" -p -S -15 2>/dev/null
-        fi
-    '
+    # Re-invoke this script in preview mode; see the "--preview" handler
+    # near the top of the file. Keeps the selected line out of an inline
+    # shell string entirely.
+    local preview_cmd="bash \"$SCRIPT_DIR/mission-control.sh\" --preview {}"
 
     # fzf with preview and keybindings (compatible with fzf 0.20+)
     local selected=$(echo "$session_list" | fzf \
