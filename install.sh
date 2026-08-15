@@ -18,7 +18,7 @@ PTTY_REF="${PTTY_REF:-v$PTTY_VERSION}"
 # sha256 of the SHA256SUMS manifest at $PTTY_REF, generated with
 # tools/gen-sha256sums.sh. Every remote-downloaded file is verified against
 # entries in that manifest before it is made executable.
-MANIFEST_SHA256="5407ce35fdae3a185ad4dbed928ef4f678feb4bb1f8af7fd8c4f4705e1c4bdc1"
+MANIFEST_SHA256="bde6b151c825bfcc7cc5fb0c71d3c09efac6bd867f19d3895a8add97c21cf8cb"
 
 # Colors for output
 RED='\033[0;31m'
