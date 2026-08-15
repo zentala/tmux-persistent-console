@@ -2,13 +2,19 @@
 
 > Connect to your persistent console sessions from anywhere
 
+The recommended setup is the `~/.ssh/config` alias in the README's
+[Quick Start](../README.md#2-set-up-a-short-ssh-alias-recommended--this-is-the-real-devex-win) —
+`ssh tmux.example.com` and you land in `console-1`. This guide covers the
+long-form commands and extra client setups (Windows Terminal, macOS,
+mobile, multi-server) that build on the same idea.
+
 ## Quick Reference
 
 ### Direct Session Access
 ```bash
-# Connect directly to specific console
-ssh user@server -t "tmux attach -t console-1"
-ssh user@server -t "tmux attach -t console-2"
+# Connect directly to a specific console (idempotent: creates it if missing)
+ssh user@server -t "tmux attach -t console-1 || tmux new -s console-1"
+ssh user@server -t "tmux attach -t console-2 || tmux new -s console-2"
 # ... through console-10
 ```
 
@@ -23,7 +29,9 @@ ssh user@server -t "/home/user/.tmux-persistent-console/connect.sh"
 ## 🖥️ Windows Terminal Integration
 
 ### Create Server Profiles
-Add these profiles to your Windows Terminal `settings.json`:
+pTTY always creates 10 consoles (`console-1`...`console-10`). Add a
+profile per console you use often — this example covers the first four;
+duplicate the pattern for the rest:
 
 ```json
 {
@@ -36,27 +44,27 @@ Add these profiles to your Windows Terminal `settings.json`:
         "colorScheme": "Campbell"
       },
       {
-        "name": "🤖 Claude Code Console",
-        "commandline": "ssh user@your-server.com -t \"tmux attach -t console-1\"",
+        "name": "🤖 Console 1",
+        "commandline": "ssh user@your-server.com -t \"tmux attach -t console-1 || tmux new -s console-1\"",
         "icon": "🤖",
         "colorScheme": "One Half Dark"
       },
       {
-        "name": "🎪 Copilot Console",
-        "commandline": "ssh user@your-server.com -t \"tmux attach -t console-2\"",
-        "icon": "🎪",
+        "name": "💻 Console 2",
+        "commandline": "ssh user@your-server.com -t \"tmux attach -t console-2 || tmux new -s console-2\"",
+        "icon": "💻",
         "colorScheme": "Solarized Dark"
       },
       {
-        "name": "💻 Development Console",
-        "commandline": "ssh user@your-server.com -t \"tmux attach -t console-3\"",
-        "icon": "💻",
+        "name": "🧪 Console 3",
+        "commandline": "ssh user@your-server.com -t \"tmux attach -t console-3 || tmux new -s console-3\"",
+        "icon": "🧪",
         "colorScheme": "Campbell Powershell"
       },
       {
-        "name": "🧪 Testing Console",
-        "commandline": "ssh user@your-server.com -t \"tmux attach -t console-4\"",
-        "icon": "🧪",
+        "name": "📊 Console 4",
+        "commandline": "ssh user@your-server.com -t \"tmux attach -t console-4 || tmux new -s console-4\"",
+        "icon": "📊",
         "colorScheme": "Vintage"
       }
     ]
@@ -71,15 +79,15 @@ Add to Windows Terminal `settings.json`:
 {
   "actions": [
     {
-      "command": { "action": "newTab", "profile": "🤖 Claude Code Console" },
+      "command": { "action": "newTab", "profile": "🤖 Console 1" },
       "keys": "ctrl+alt+1"
     },
     {
-      "command": { "action": "newTab", "profile": "🎪 Copilot Console" },
+      "command": { "action": "newTab", "profile": "💻 Console 2" },
       "keys": "ctrl+alt+2"
     },
     {
-      "command": { "action": "newTab", "profile": "💻 Development Console" },
+      "command": { "action": "newTab", "profile": "🧪 Console 3" },
       "keys": "ctrl+alt+3"
     }
   ]
@@ -90,7 +98,7 @@ Add to Windows Terminal `settings.json`:
 
 ### iTerm2 Profiles
 1. **Create New Profile**: iTerm2 → Preferences → Profiles → New
-2. **Set Command**: `ssh user@server -t "tmux attach -t console-1"`
+2. **Set Command**: `ssh user@server -t "tmux attach -t console-1 || tmux new -s console-1"`
 3. **Set Hotkey**: Preferences → Keys → Hotkey Window
 4. **Repeat for each console**
 
@@ -98,9 +106,9 @@ Add to Windows Terminal `settings.json`:
 Create `.command` files on Desktop:
 
 ```bash
-# ~/Desktop/Claude-Code-Console.command
+# ~/Desktop/Console-1.command
 #!/bin/bash
-ssh user@server -t "tmux attach -t console-1"
+ssh user@server -t "tmux attach -t console-1 || tmux new -s console-1"
 ```
 
 ```bash
@@ -121,19 +129,19 @@ Make executable: `chmod +x ~/Desktop/*.command`
 blink> config
 
 # Create session shortcuts
-ssh server -t "tmux attach -t console-1"
+ssh server -t "tmux attach -t console-1 || tmux new -s console-1"
 ```
 
 #### Termius
 1. **Add Host**: Settings → Hosts → Add
-2. **Set Command**: `tmux attach -t console-1`
+2. **Set Command**: `tmux attach -t console-1 || tmux new -s console-1`
 3. **Create Snippet**: For quick console switching
 
 ### Android
 
 #### JuiceSSH
 1. **Create Connection**: server details
-2. **Set Post-login Command**: `tmux attach -t console-1`
+2. **Set Post-login Command**: `tmux attach -t console-1 || tmux new -s console-1`
 3. **Create Shortcuts**: For each console
 
 #### Termux
@@ -142,33 +150,33 @@ ssh server -t "tmux attach -t console-1"
 pkg install openssh
 
 # Connect with session
-ssh user@server -t "tmux attach -t console-1"
+ssh user@server -t "tmux attach -t console-1 || tmux new -s console-1"
 ```
 
 ## 🔐 SSH Configuration
 
 ### Client SSH Config (`~/.ssh/config`)
-```bash
-# Server console access
+```sshconfig
+# Server console menu
 Host server-console
     HostName your-server.com
     User your-username
     Port 22
-    RequestTTY force
+    RequestTTY yes
     RemoteCommand connect-console
 
 # Direct console access
 Host server-console-1
     HostName your-server.com
     User your-username
-    RequestTTY force
-    RemoteCommand tmux attach -t console-1
+    RequestTTY yes
+    RemoteCommand tmux attach -t console-1 || tmux new -s console-1
 
 Host server-console-2
     HostName your-server.com
     User your-username
-    RequestTTY force
-    RemoteCommand tmux attach -t console-2
+    RequestTTY yes
+    RemoteCommand tmux attach -t console-2 || tmux new -s console-2
 
 # Continue for console-3 through console-10
 ```
@@ -189,7 +197,7 @@ ssh server-console-2
 ### SSH Multiplexing
 Add to `~/.ssh/config` for faster connections:
 
-```bash
+```sshconfig
 Host *
     ControlMaster auto
     ControlPath ~/.ssh/master-%r@%h:%p
@@ -199,7 +207,7 @@ Host *
 ### Port Forwarding with Consoles
 ```bash
 # Forward web services while in console
-ssh -L 8080:localhost:8080 user@server -t "tmux attach -t console-3"
+ssh -L 8080:localhost:8080 user@server -t "tmux attach -t console-3 || tmux new -s console-3"
 
 # Access local:8080 for server's port 8080
 ```
@@ -213,31 +221,31 @@ ssh-keygen -t ed25519 -C "console-access"
 ssh-copy-id user@server
 
 # Now connect without password
-ssh user@server -t "tmux attach -t console-1"
+ssh user@server -t "tmux attach -t console-1 || tmux new -s console-1"
 ```
 
 ## 🌍 Multi-Server Setup
 
 ### Managing Multiple Servers
-```bash
+```sshconfig
 # ~/.ssh/config for multiple servers
 Host dev-server-console
     HostName dev.example.com
     User dev-user
-    RequestTTY force
+    RequestTTY yes
     RemoteCommand connect-console
 
 Host prod-server-console
     HostName prod.example.com
     User prod-user
-    RequestTTY force
+    RequestTTY yes
     RemoteCommand connect-console
 
 Host staging-console-1
     HostName staging.example.com
     User staging-user
-    RequestTTY force
-    RemoteCommand tmux attach -t console-1
+    RequestTTY yes
+    RemoteCommand tmux attach -t console-1 || tmux new -s console-1
 ```
 
 ### Server Selector Script
@@ -271,7 +279,7 @@ CONSOLE="console-1"
 
 while true; do
     echo "Connecting to $CONSOLE on $SERVER..."
-    ssh $SERVER -t "tmux attach -t $CONSOLE"
+    ssh "$SERVER" -t "tmux attach -t $CONSOLE || tmux new -s $CONSOLE"
 
     echo "Connection lost. Reconnecting in 5 seconds..."
     sleep 5
@@ -317,7 +325,7 @@ ssh user@server "sudo yum install tmux"  # CentOS/RHEL
 echo $TERM
 
 # Set proper terminal in SSH
-ssh -o SendEnv=TERM user@server -t "tmux attach -t console-1"
+ssh -o SendEnv=TERM user@server -t "tmux attach -t console-1 || tmux new -s console-1"
 ```
 
 ### Network Issues
@@ -325,13 +333,13 @@ ssh -o SendEnv=TERM user@server -t "tmux attach -t console-1"
 #### Unstable Connections
 ```bash
 # Use autossh for persistent connection
-autossh -M 20000 user@server -t "tmux attach -t console-1"
+autossh -M 20000 user@server -t "tmux attach -t console-1 || tmux new -s console-1"
 ```
 
 #### Connection Timeouts
 Add to `~/.ssh/config`:
 
-```bash
+```sshconfig
 Host *
     ServerAliveInterval 60
     ServerAliveCountMax 3
@@ -342,7 +350,7 @@ Host *
 ### Reducing Latency
 ```bash
 # Use compression for slow connections
-ssh -C user@server -t "tmux attach -t console-1"
+ssh -C user@server -t "tmux attach -t console-1 || tmux new -s console-1"
 
 # Disable unnecessary features
 ssh -o Compression=yes -o TCPKeepAlive=yes user@server
@@ -361,28 +369,23 @@ set -g history-limit 5000
 ## 🔗 Integration Examples
 
 ### VS Code Remote SSH
-```bash
-# Use tmux with VS Code Remote SSH
-# In VS Code settings.json:
+```jsonc
+// In VS Code settings.json:
 {
   "remote.SSH.defaultExtensions": ["ms-vscode-remote.remote-ssh"],
   "terminal.integrated.defaultProfile.linux": "tmux",
   "terminal.integrated.profiles.linux": {
     "tmux": {
       "path": "ssh",
-      "args": ["user@server", "-t", "tmux attach -t console-3"]
+      "args": ["user@server", "-t", "tmux attach -t console-3 || tmux new -s console-3"]
     }
   }
 }
 ```
 
-### Browser-Based Access
-```bash
-# Use ttyd for web-based terminal
-ssh user@server "tmux attach -t console-1 | ttyd --port 8080 bash"
-# Access via browser at server:8080
-```
-
 ---
 
-**💡 Pro Tip**: Create a simple launcher script that tests connection and automatically falls back to session creation if sessions don't exist!
+**💡 Pro Tip**: The `tmux attach -t console-N || tmux new -s console-N` pattern
+used throughout this guide is idempotent — it attaches if the session exists
+and creates it otherwise, so it is safe to run right after a fresh install or
+a server reboot.
