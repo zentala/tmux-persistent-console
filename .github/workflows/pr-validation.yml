@@ -10,6 +10,9 @@ on:
 env:
   TF_VERSION: "1.6.0"
 
+permissions:
+  contents: read
+
 jobs:
   # Fast validation for all PRs
   quick-checks:
@@ -73,6 +76,10 @@ jobs:
         run: |
           bash tools/check-tmux-references.sh
 
+      - name: 📋 Validate SHA256SUMS manifest is up to date
+        run: |
+          bash tools/gen-sha256sums.sh --check
+
       - name: 🧪 Unit tests
         run: |
           bash tests/unit/test-session-list.sh
@@ -123,7 +130,7 @@ jobs:
           fetch-depth: 0
 
       - name: 🔍 Scan for secrets
-        uses: trufflesecurity/trufflehog@main
+        uses: trufflesecurity/trufflehog@bcfcf73aaf4759d4dadc2783177c245a02792318 # v3.97.0
         with:
           path: ./
           base: ${{ github.event.repository.default_branch }}
@@ -131,7 +138,7 @@ jobs:
           extra_args: --debug --only-verified
 
       - name: 🛡️ Terraform security scan
-        uses: bridgecrewio/checkov-action@master
+        uses: bridgecrewio/checkov-action@99bb2caf247dfd9f03cf984373bc6043d4e32ebf # v12.1347.0
         with:
           directory: tests/terraform
           framework: terraform

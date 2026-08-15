@@ -20,6 +20,9 @@ env:
   TF_VERSION: "1.6.0"
   VERSION_TAG: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.version }}
 
+permissions:
+  contents: read
+
 jobs:
   # Pre-release validation
   pre-release-validation:
@@ -125,10 +128,18 @@ jobs:
           # Install pTTY
           RUN curl -sSL https://raw.githubusercontent.com/zentala/pTTY/main/install.sh | bash
 
-          # Configure SSH
+          # NOTE: this Dockerfile is an example for local/loopback use only
+          # (e.g. `docker run -p 127.0.0.1:2222:22 ...`). Never expose it to
+          # a public network as-is: it ships no root password and relies on
+          # key-based auth you must add yourself (COPY your public key into
+          # /home/<user>/.ssh/authorized_keys and create a non-root user).
           RUN mkdir /var/run/sshd
-          RUN echo 'root:password' | chpasswd
-          RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+          RUN useradd -m -s /bin/bash pttyuser
+          RUN mkdir -p /home/pttyuser/.ssh && chmod 700 /home/pttyuser/.ssh
+          # COPY your_key.pub /home/pttyuser/.ssh/authorized_keys
+          RUN chown -R pttyuser:pttyuser /home/pttyuser/.ssh
+          RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
+          RUN sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
 
           EXPOSE 22
 
