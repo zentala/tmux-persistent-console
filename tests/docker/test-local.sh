@@ -93,6 +93,24 @@ case "$ACTION" in
         echo -e "${CYAN}Running automated tests...${NC}"
         docker exec tmux-test-client run-tests.sh
 
+        # Status bar suite: needs a real tmux client, so run it inside a
+        # detached session on the server (testuser already has console-1..10
+        # from the entrypoint). tmux wait-for blocks docker exec until the
+        # suite finishes; the exit code is relayed through a file because
+        # the suite runs detached, not as docker exec's own process.
+        echo -n "Test: Status bar suite (non-interactive)... "
+        STATUS_BAR_EXIT=$(docker exec -u testuser tmux-test-server bash -c '
+            tmux new-session -d -s status-bar-test -n runner \
+                "bash /tmp/ptty/tests/run-all-tests.sh --non-interactive; echo \$? > /tmp/status-bar-exit.txt; tmux wait-for -S status-bar-done"
+            tmux wait-for status-bar-done
+            cat /tmp/status-bar-exit.txt
+        ' 2>/dev/null | tail -1)
+        if [ "$STATUS_BAR_EXIT" = "0" ]; then
+            echo -e "${GREEN}✅ PASSED${NC}"
+        else
+            echo -e "${RED}❌ FAILED (exit $STATUS_BAR_EXIT)${NC}"
+        fi
+
         # Additional host-based tests
         echo ""
         echo -e "${CYAN}Running host-based tests...${NC}"

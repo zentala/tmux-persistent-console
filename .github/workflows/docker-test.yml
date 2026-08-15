@@ -50,6 +50,22 @@ jobs:
           echo "🔍 Checking server container health..."
           docker exec tmux-test-server test-console.sh
 
+      - name: 🧪 Run status bar suite (non-interactive)
+        run: |
+          echo "🧪 Running status bar suite inside a real tmux session..."
+          STATUS_BAR_EXIT=$(docker exec -u testuser tmux-test-server bash -c '
+            tmux new-session -d -s status-bar-test -n runner \
+              "bash /tmp/ptty/tests/run-all-tests.sh --non-interactive; echo \$? > /tmp/status-bar-exit.txt; tmux wait-for -S status-bar-done"
+            tmux wait-for status-bar-done
+            cat /tmp/status-bar-exit.txt
+          ' | tail -1)
+          echo "Exit code: $STATUS_BAR_EXIT"
+          if [ "$STATUS_BAR_EXIT" != "0" ]; then
+            echo "❌ Status bar suite failed"
+            exit 1
+          fi
+          echo "✅ Status bar suite passed"
+
       - name: 🧪 Run automated tests
         id: tests
         run: |

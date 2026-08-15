@@ -11,6 +11,13 @@ NC='\033[0m'
 
 TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+NON_INTERACTIVE=0
+for arg in "$@"; do
+    case "$arg" in
+        --non-interactive) NON_INTERACTIVE=1 ;;
+    esac
+done
+
 echo -e "${CYAN}╔════════════════════════════════════════════════════════╗${NC}"
 echo -e "${CYAN}║  Status Bar Test Suite - Run All Tests                ║${NC}"
 echo -e "${CYAN}╚════════════════════════════════════════════════════════╝${NC}"
@@ -41,8 +48,10 @@ else
 fi
 
 echo ""
-echo -e "${YELLOW}Press Enter to continue to next test...${NC}"
-read -r
+if [ "$NON_INTERACTIVE" -eq 0 ]; then
+    echo -e "${YELLOW}Press Enter to continue to next test...${NC}"
+    read -r
+fi
 
 # Test 2: Position verification
 echo ""
@@ -61,8 +70,10 @@ else
 fi
 
 echo ""
-echo -e "${YELLOW}Press Enter to continue to next test...${NC}"
-read -r
+if [ "$NON_INTERACTIVE" -eq 0 ]; then
+    echo -e "${YELLOW}Press Enter to continue to next test...${NC}"
+    read -r
+fi
 
 # Test 3: Scroll behavior (CRITICAL)
 echo ""
