@@ -202,13 +202,9 @@ exec bash --noprofile --norc
 
 ## Related Architecture Decisions
 
-- **[ADR 003](../../03-architecture/decisions/003-gum-ui-framework.md):** Gum UI Framework - F12 Help uses gum for interactive display
+- **ADR 003:** Gum UI Framework - F12 Help uses gum for interactive display (internal decisions log)
 
 ## Implementation Status
 
 - [x] **v0.1** - Prototype in `src/console-help.sh` (static display)
-- [ ] **v0.2** - Refactored in `src/ui/help/` (Task 002)
-
-## Related Tasks
-
-- **[Task 002](../../04-tasks/002-refactor-ui-components.md):** UI Components refactoring (implements F12 Help)
+- [ ] **v0.2** - Refactored in `src/ui/help/` (UI components refactor)

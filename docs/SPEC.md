@@ -86,11 +86,11 @@
 |-----|----------|-------------|
 | **Ctrl+Left** | Previous Session | Navigate backwards through sessions |
 | **Ctrl+Right** | Next Session | Navigate forwards through sessions |
-| **Ctrl+H** | Shortcuts Popup | Quick reference popup |
-| **Ctrl+R** | Restart Console | Restart current console (with confirmation) |
+| **Ctrl+B H** | Shortcuts Popup | Quick reference popup |
+| **Ctrl+B R** | Restart Console | Restart current console (with confirmation) |
 | **Ctrl+Alt+R** | Reset Terminal | Clear and reset current terminal |
 | **Ctrl+Esc** | Detach | Safe disconnect (future, see Open Questions) |
-| **Ctrl+Del** | Restart Terminal | Same popup as Ctrl+R (future) |
+| **Ctrl+Del** | Restart Terminal | Same popup as Ctrl+B R (future) |
 
 ### Backup: Traditional tmux navigation
 
@@ -288,7 +288,7 @@
 
 **Functionality:**
 - Display all F-key bindings
-- Show additional shortcuts (Ctrl+H, Ctrl+R, etc.)
+- Show additional shortcuts (Ctrl+B H, Ctrl+B R, etc.)
 - Basic usage instructions
 - Non-interactive (read-only)
 
@@ -347,7 +347,7 @@
 
 **Implementation:**
 - `Ctrl+Esc` = Detach (safe disconnect)
-- `Ctrl+Del` = Restart terminal (same popup as Ctrl+R)
+- `Ctrl+Del` = Restart terminal (same popup as Ctrl+B R)
 
 **Status:** ✅ Approved - ready for implementation
 
@@ -385,7 +385,7 @@
 
 **Problem:** F11 does detach instead of staying in manager session
 
-**User report:** "F11 ona się nie zamyka, ona znam rozłącza tmux jakby robił detach"
+**User report** (original user feedback, Polish): "F11 ona się nie zamyka, ona znam rozłącza tmux jakby robił detach"
 
 **Root cause investigation needed:**
 - Check `src/manager-menu.sh` script
@@ -403,7 +403,7 @@
 
 ### 5. Status Bar & Manager Menu Vision ⏳ IN PROGRESS
 
-**User requirement:** "Najpierw zróbmy spec na wszystko i dokładną wizję a później będziemy dzielili na etapy. Nie chcę robić etapami tylko chcę mieć skończoną wizję na całość i ją skończyć."
+**User requirement** (original user feedback, Polish): "Najpierw zróbmy spec na wszystko i dokładną wizję a później będziemy dzielili na etapy. Nie chcę robić etapami tylko chcę mieć skończoną wizję na całość i ją skończyć."
 
 **Action required:**
 1. Create complete Manager Menu (F11) specification

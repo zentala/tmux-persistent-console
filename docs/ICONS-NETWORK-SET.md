@@ -157,8 +157,8 @@
 ## 🔗 References
 
 - **Theme configuration**: `src/theme-config.sh`
-- **Status bar spec**: `02-planning/SPEC.md`
-- **Icon mapping**: `02-planning/specs/ICONS-SPEC.md`
+- **Status bar spec**: `SPEC.md`
+- **Icon mapping**: `specs/ICONS-SPEC.md`
 
 ---
 

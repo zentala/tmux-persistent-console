@@ -1,16 +1,16 @@
 # Developer Tools
 
-Narzędzia do monitorowania CI/CD i zarządzania projektem.
+CI/CD monitoring and project management tools.
 
 ---
 
 ## 🔍 CI/CD Monitoring Tools
 
-### `check-ci.sh` - Sprawdź status buildów
+### `check-ci.sh` - Check build status
 
-Sprawdza ostatnie buildy na GitHub Actions.
+Checks recent builds on GitHub Actions.
 
-**Użycie:**
+**Usage:**
 ```bash
 ./tools/check-ci.sh              # Check main branch
 ./tools/check-ci.sh develop      # Check develop branch
@@ -21,7 +21,7 @@ Sprawdza ostatnie buildy na GitHub Actions.
 🔍 GitHub Actions CI/CD Status
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Repository: zentala/tmux-persistent-console
+Repository: zentala/pTTY
 Branch: main
 
 📊 Latest Workflow Runs:
@@ -29,12 +29,12 @@ Branch: main
 ✅ 🧪 Test Infrastructure
    Status: completed | Conclusion: success
    Date: 2025-10-07
-   URL: https://github.com/zentala/tmux-persistent-console/actions/runs/...
+   URL: https://github.com/zentala/pTTY/actions/runs/...
 
 🔄 🔒 Security Scan
    Status: in_progress | Conclusion: running
    Date: 2025-10-07
-   URL: https://github.com/zentala/tmux-persistent-console/actions/runs/...
+   URL: https://github.com/zentala/pTTY/actions/runs/...
 
 📝 Latest Commit Status:
 
@@ -44,56 +44,56 @@ Message: feat(v3.0): Eliminate status bar flickering with static tmux formats
 ✅ All checks passed
 
 🔗 Quick Links:
-  • Actions: https://github.com/zentala/tmux-persistent-console/actions
-  • Latest: https://github.com/zentala/tmux-persistent-console/actions/runs
-  • Commit: https://github.com/zentala/tmux-persistent-console/commit/...
+  • Actions: https://github.com/zentala/pTTY/actions
+  • Latest: https://github.com/zentala/pTTY/actions/runs
+  • Commit: https://github.com/zentala/pTTY/commit/...
 ```
 
-**Wymaga:**
-- GitHub CLI: `sudo apt install gh` (Debian/Ubuntu) lub `brew install gh` (macOS)
-- Autentykacja: `gh auth login`
+**Requires:**
+- GitHub CLI: `sudo apt install gh` (Debian/Ubuntu) or `brew install gh` (macOS)
+- Authentication: `gh auth login`
 
 ---
 
-### `watch-ci.sh` - Obserwuj buildy w czasie rzeczywistym
+### `watch-ci.sh` - Watch builds in real time
 
-Automatycznie odświeża status co N sekund.
+Refreshes status automatically every N seconds.
 
-**Użycie:**
+**Usage:**
 ```bash
 ./tools/watch-ci.sh           # Refresh every 10 seconds
 ./tools/watch-ci.sh 5         # Refresh every 5 seconds
 ./tools/watch-ci.sh 30        # Refresh every 30 seconds
 ```
 
-**Użyteczne gdy:**
-- Czekasz na zakończenie builda
-- Debugujesz problemy CI/CD
-- Monitorujesz długie testy
+**Useful when:**
+- Waiting for a build to finish
+- Debugging CI/CD issues
+- Watching long-running tests
 
-**Wyjście:** Ctrl+C
+**Exit:** Ctrl+C
 
 ---
 
-### `push-and-watch.sh` - Push i automatyczne monitorowanie
+### `push-and-watch.sh` - Push and auto-monitor
 
-Pushuje kod na GitHub i automatycznie monitoruje status builda.
+Pushes to GitHub and automatically watches the build status.
 
-**Użycie:**
+**Usage:**
 ```bash
 ./tools/push-and-watch.sh              # Push to main and watch
 ./tools/push-and-watch.sh develop      # Push to develop and watch
 ```
 
-**Co robi:**
-1. Sprawdza czy jesteś na właściwym branchu
-2. Sprawdza uncommitted changes
-3. Opcjonalnie commituje zmiany (jeśli zapytasz)
-4. Pushuje na GitHub
-5. Monitoruje CI/CD przez 2 minuty (12 × 10s)
-6. Pokazuje link do kontynuacji
+**What it does:**
+1. Checks you're on the right branch
+2. Checks for uncommitted changes
+3. Optionally commits changes (asks first)
+4. Pushes to GitHub
+5. Watches CI/CD for 2 minutes (12 × 10s)
+6. Prints a link to keep watching
 
-**Przykład:**
+**Example:**
 ```bash
 $ ./tools/push-and-watch.sh main
 
@@ -117,7 +117,7 @@ Continue watching with:
 
 ## 📋 Workflow Descriptions
 
-Twoje GitHub Actions workflows:
+The repo's GitHub Actions workflows:
 
 ### 🧪 Test Infrastructure (`test-infrastructure.yml`)
 
@@ -128,77 +128,77 @@ Twoje GitHub Actions workflows:
 
 **Jobs:**
 
-1. **Quick Validation** (zawsze)
-   - Sprawdza składnię bash scripts
-   - Waliduje tmux.conf
-   - Sprawdza Terraform config
+1. **Quick Validation** (always)
+   - Checks bash script syntax
+   - Validates tmux.conf
+   - Checks Terraform config
 
-2. **Cloud Testing** (tylko main/PR/manual)
-   - Deploy na Oracle Cloud Free Tier
-   - Instaluje tmux-persistent-console
-   - Uruchamia testy automatyczne
-   - Cleanup (usuwa infrastrukturę)
+2. **Cloud Testing** (main/PR/manual only)
+   - Deploys to Oracle Cloud Free Tier
+   - Installs pTTY
+   - Runs the automated test suite
+   - Cleanup (tears down the infrastructure)
 
 3. **Security Scan**
    - Checkov (Terraform security)
    - TruffleHog (secret detection)
 
 **Test types** (manual dispatch):
-- `full` - Pełny test suite (default)
-- `quick` - Tylko szybkie testy
-- `stress` - 3 cykle testów
+- `full` - Full test suite (default)
+- `quick` - Fast tests only
+- `stress` - 3 test cycles
 
-**Czas:** ~15-30 minut (z Oracle Cloud)
+**Duration:** ~15-30 minutes (with Oracle Cloud)
 
 ---
 
 ### 📦 Release (`release.yml`)
 
-Automatyczne tworzenie release'ów przy tagowaniu.
+Creates a release automatically when a tag is pushed.
 
 **Trigger:**
-- Push tagu: `v*` (np. `v3.0`, `v3.1-beta`)
+- Tag push: `v*` (e.g. `v3.0`, `v3.1-beta`)
 
-**Co robi:**
-- Tworzy GitHub Release
-- Generuje changelog
-- Dołącza pliki instalacyjne
+**What it does:**
+- Creates a GitHub Release
+- Generates a changelog
+- Attaches install files
 
 ---
 
 ### 🔍 PR Validation (`pr-validation.yml`)
 
-Walidacja Pull Requestów.
+Validates pull requests.
 
 **Trigger:**
-- Otwarcie PR
-- Update PR
+- PR opened
+- PR updated
 
-**Co sprawdza:**
-- Składnia kodu
-- Testy jednostkowe
-- Konflikt z main
+**What it checks:**
+- Code syntax
+- Unit tests
+- Conflicts with main
 
 ---
 
 ### 🐳 Docker Test (`docker-test.yml`)
 
-Testy w czystym środowisku Docker.
+Tests in a clean Docker environment.
 
 **Trigger:**
-- Push do `src/`, `tests/`, `Dockerfile`
+- Push to `src/`, `tests/`, `Dockerfile`
 - Pull Request
 
-**Co testuje:**
-- Build obrazu Docker
-- Instalacja w kontenerze
-- Podstawowe funkcje tmux
+**What it tests:**
+- Docker image build
+- Install inside the container
+- Basic tmux functionality
 
 ---
 
 ## 🛠️ Installation & Setup
 
-### 1. Zainstaluj GitHub CLI
+### 1. Install GitHub CLI
 
 **Debian/Ubuntu:**
 ```bash
@@ -211,33 +211,33 @@ sudo apt install gh
 brew install gh
 ```
 
-**Inne:** https://cli.github.com/
+**Other:** https://cli.github.com/
 
-### 2. Autentykacja
+### 2. Authenticate
 
 ```bash
 gh auth login
 ```
 
-Wybierz:
+Choose:
 - GitHub.com
-- HTTPS lub SSH
+- HTTPS or SSH
 - Login through web browser
 
-### 3. Sprawdź instalację
+### 3. Verify the install
 
 ```bash
 gh auth status
 ```
 
-Powinno pokazać:
+Should show:
 ```
 ✓ Logged in to github.com as zentala (...)
 ✓ Git operations for github.com configured to use ssh protocol.
 ✓ Token: *******************
 ```
 
-### 4. Test
+### 4. Test it
 
 ```bash
 cd ~/.vps/sessions
@@ -248,13 +248,13 @@ cd ~/.vps/sessions
 
 ## 💡 Tips & Tricks
 
-### Szybkie sprawdzenie ostatniego builda
+### Quick check of the last build
 
 ```bash
 ./tools/check-ci.sh | head -20
 ```
 
-### Monitoring w osobnym terminalu
+### Monitoring in a separate terminal
 
 ```bash
 # Terminal 1: Work normally
@@ -264,18 +264,18 @@ vim src/tmux.conf
 ./tools/watch-ci.sh
 ```
 
-### Push i idź spać 😴
+### Push and walk away
 
 ```bash
 ./tools/push-and-watch.sh main
 
-# Po 2 minutach monitoring się kończy
-# Ale build dalej działa
-# Rano sprawdź:
+# Monitoring stops after 2 minutes
+# but the build keeps running
+# check back later:
 ./tools/check-ci.sh
 ```
 
-### Sprawdź konkretny commit
+### Check a specific commit
 
 ```bash
 git log --oneline -5
@@ -284,7 +284,7 @@ git log --oneline -5
 gh run list --commit <hash>
 ```
 
-### Re-run failed build
+### Re-run a failed build
 
 ```bash
 # Get run ID from check-ci.sh output
@@ -313,7 +313,7 @@ gh workflow run test-infrastructure.yml \
 
 ### "gh: command not found"
 
-**Problem:** GitHub CLI nie jest zainstalowany.
+**Problem:** GitHub CLI is not installed.
 
 **Solution:**
 ```bash
@@ -327,7 +327,7 @@ brew install gh         # macOS
 
 ### "gh auth status: authentication required"
 
-**Problem:** Nie jesteś zalogowany.
+**Problem:** Not logged in.
 
 **Solution:**
 ```bash
@@ -337,7 +337,7 @@ gh auth login
 
 ### "API rate limit exceeded"
 
-**Problem:** Za dużo requestów do GitHub API.
+**Problem:** Too many requests to the GitHub API.
 
 **Solution:**
 ```bash
@@ -348,9 +348,9 @@ gh api rate_limit
 gh auth login
 ```
 
-### Build się nie uruchamia
+### Build doesn't start
 
-**Problem:** Workflow może nie triggerować na twoim branchu.
+**Problem:** The workflow may not trigger on your branch.
 
 **Solution:**
 ```bash
@@ -361,9 +361,9 @@ cat .github/workflows/test-infrastructure.yml | grep -A 5 "on:"
 gh workflow run test-infrastructure.yml --ref your-branch
 ```
 
-### Nie widzę buildów dla swojego commita
+### No builds show up for your commit
 
-**Problem:** Commit może nie spełniać triggers (np. zmiana tylko w docs).
+**Problem:** The commit may not match the trigger paths (e.g. docs-only change).
 
 **Solution:**
 ```bash
@@ -386,7 +386,7 @@ gh workflow run test-infrastructure.yml
 
 ## 🔗 Quick Links
 
-- **GitHub Actions**: https://github.com/zentala/tmux-persistent-console/actions
+- **GitHub Actions**: https://github.com/zentala/pTTY/actions
 - **GitHub CLI Docs**: https://cli.github.com/manual/
 - **Workflow Syntax**: https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
 

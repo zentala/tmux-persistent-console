@@ -10,7 +10,7 @@
 
 ## The Problem
 
-You're SSH'd into a remote server running a long Claude Code session. Your WiFi flakes for 10 seconds. SSH disconnects. You reconnect — and your AI conversation context, your scrollback, your background processes are **gone**. You rebuild context. It takes 20 minutes. Then it happens again.
+You're SSH'd into a remote server running a long Claude Code session. Your WiFi flakes for 10 seconds. SSH disconnects. You reconnect — and your AI conversation context, your scrollback, your background processes are **gone**. You rebuild context. It can take 15-20 minutes to rebuild. Then it happens again.
 
 This is the daily reality of remote AI-assisted development:
 
@@ -35,19 +35,19 @@ pTTY keeps the **process alive on the server** while you reconnect. tmux runs as
 
 ### What pTTY does NOT protect you from
 
-- ❌ **Server** reboot — tmux daemon auto-restarts via systemd, but in-memory sessions (AI context, scrollback, running processes) are lost. The daemon comes back ready for new sessions; old ones are gone. Rare in practice (~5% of real-world session loss).
+- ❌ **Server** reboot — tmux daemon auto-restarts via systemd, but in-memory sessions (AI context, scrollback, running processes) are lost. The daemon comes back ready for new sessions; old ones are gone. Rare in practice.
 - ❌ tmux server crash (OOM kill, manual `kill-server`)
 
 If you need crash-survivable AI sessions, that's a different product (state replication + cloud sync). pTTY is laser-focused on the 95% case: client-side disconnections.
 
-## ✨ Features
+## Features
 
-### 🚀 Instant Session Switching
+### Instant Session Switching
 - **Ctrl+F1-F10**: Jump directly to consoles 1-10
 - **Ctrl+F11**: Open Manager Menu (interactive terminal manager)
 - **Ctrl+F12**: Show Help Reference (keyboard shortcuts)
 
-### 🛡️ Disconnection-Resistant Design
+### Disconnection-Resistant Design
 - Sessions persist across SSH disconnects, WiFi changes, and laptop sleep
 - Reconnect over any new network and pick up where you left off
 - Survives **client** reboots — your laptop can restart, sessions keep running on the server
@@ -55,14 +55,14 @@ If you need crash-survivable AI sessions, that's a different product (state repl
 - AI conversation context stays in memory on the server — not just metadata
 - **Safe-exit protection** — prevents accidental session termination via `exit`
 
-### 🤖 AI CLI Optimized
-Perfect companion for:
+### AI CLI Optimized
+Built for:
 - **Claude Code** remote development sessions
 - **GitHub Copilot CLI** workflows
 - Long AI-assisted coding sessions
 - Remote server maintenance with AI tools
 
-### 🖥️ Windows Terminal Friendly
+### Windows Terminal Friendly
 - Function keys work perfectly in Windows Terminal
 - No complex key combinations to remember
 - Visual session indicators
@@ -89,7 +89,7 @@ Each entry: one sentence on what the tool is, one sentence on how pTTY differs.
 
 pTTY explicitly does **not** try to survive server reboot — that's a fundamentally different product (state replication, cloud sync). pTTY's contract is "survives SSH disconnect, not server restart."
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Install on the server
 
@@ -188,27 +188,27 @@ ssh user@server -t "tmux attach -t console-1 || tmux new -s console-1"
 
 But seriously — set up the alias. It's the difference between `ssh tmux.example.com` and 60 characters of muscle memory.
 
-## 🎯 Perfect For
+## Who it's for
 
-### 👨‍💻 AI CLI Users
+### AI CLI Users
 - **Claude Code** sessions that survive disconnects
 - **GitHub Copilot CLI** long conversations
 - AI-assisted debugging and development
 - Remote pair programming with AI
 
-### 🔧 System Administrators
+### System Administrators
 - Server updates and maintenance
 - Monitoring multiple services
 - Long-running deployment scripts
 - Emergency troubleshooting
 
-### 🌐 Remote Workers
+### Remote Workers
 - Unstable internet connections
 - Working across multiple time zones
 - Switching between different client servers
 - Mobile/travel development
 
-## 📖 Key Bindings Reference
+## Key Bindings Reference
 
 ### Consoles (F1-F10)
 | Key | Console | Purpose |
@@ -224,22 +224,22 @@ But seriously — set up the alias. It's the difference between `ssh tmux.exampl
 | `Ctrl+F9` | Console-9 | Extra workspace |
 | `Ctrl+F10` | Console-10 | Extra workspace |
 
-### 🎛️ Manager & Help (F11-F12)
+### Manager & Help (F11-F12)
 | Key | Action | Purpose |
 |-----|--------|---------|
 | `Ctrl+F11` |  **Manager Menu** | Interactive terminal manager (TUI) |
 | `Ctrl+F12` |  **Help Reference** | Keyboard shortcuts & help |
 
-### ⚡ Additional Navigation & Actions
+### Additional Navigation & Actions
 | Key | Action | Purpose |
 |-----|--------|---------|
 | `Ctrl+Left` | ⬅️ Previous Session | Navigate backwards |
 | `Ctrl+Right` | ➡️ Next Session | Navigate forwards |
-| `Ctrl+H` | 📋 Shortcuts Popup | Quick reference popup |
-| `Ctrl+R` | 🔄 Restart Console | Restart current console (with confirmation) |
+| `Ctrl+B H` | 📋 Shortcuts Popup | Quick reference popup |
+| `Ctrl+B R` | 🔄 Restart Console | Restart current console (with confirmation) |
 | `Ctrl+Alt+R` | 🔄 Reset Terminal | Clear & refresh current terminal |
 
-### 🔄 Backup: Traditional tmux Navigation
+### Backup: Traditional tmux Navigation
 | Key | Action |
 |-----|--------|
 | `Ctrl+b, s` | Visual session list |
@@ -248,7 +248,7 @@ But seriously — set up the alias. It's the difference between `ssh tmux.exampl
 | `Ctrl+b, )` | Next session |
 | `Ctrl+b, L` | Last used session |
 
-## 🔧 Advanced Usage
+## Advanced Usage
 
 ### Remote SSH Access
 
@@ -285,42 +285,15 @@ setup-console-sessions
 tmux new-session -d -s "project-work"
 ```
 
-## 🤖 AI CLI Workflow Examples
+## AI CLI Workflow Examples
 
-### Claude Code Remote Development
+One SSH connection, multiple consoles via F-keys: run Claude Code in one
+console, tests in another, git in a third — flip between them with
+`Ctrl+F1`-`Ctrl+F10`, and pick up exactly where you left off after any
+disconnect. See [docs/ai-cli-workflow.md](docs/ai-cli-workflow.md) for the
+full Claude Code and GitHub Copilot CLI examples.
 
-You SSH in **once** — `ssh tmux.example.com` — and then use `Ctrl+F1`-`Ctrl+F10` to flip between consoles inside that single tmux session. No second SSH, no second terminal window required.
-
-```text
-ssh tmux.example.com         # one connection — lands you in console-1
-
-# Inside tmux, set each console up once:
-#   Ctrl+F1 → console-1 → run: claude-code
-#   Ctrl+F2 → console-2 → run: tail -f logs/app.log
-#   Ctrl+F3 → console-3 → run: git status
-
-# Then just press Ctrl+F1 / F2 / F3 to switch between them instantly.
-# WiFi dies? Run `ssh tmux.example.com` again — everything is still there.
-```
-
-### GitHub Copilot CLI Workflow
-
-Same pattern — one SSH connection, multiple consoles via F-keys:
-
-```text
-ssh tmux.example.com
-
-# Ctrl+F1 → Copilot chat:  gh copilot explain "complex function"
-# Ctrl+F2 → Testing:       npm test --watch
-# Ctrl+F3 → Git/deploy:    git status && git push
-
-# All three consoles stay alive on the server. Disconnect any time;
-# reconnect with `ssh tmux.example.com` and pick up exactly where you left off.
-```
-
-> 💡 **Why one SSH, not three?** tmux multiplexes inside the single SSH connection — one TCP socket carries all 10 consoles. Opening three SSH sessions just to switch between three consoles wastes connections and forces you to track three separate terminal windows. The whole point of pTTY is: *one connection, many consoles, F-keys to flip between them*.
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 pTTY/
@@ -329,16 +302,31 @@ pTTY/
 │   ├── setup.sh            # Creates 10 persistent sessions
 │   ├── connect.sh          # Interactive connection menu
 │   ├── tmux.conf           # Optimized tmux configuration
-│   └── uninstall.sh        # Clean removal script
+│   ├── uninstall.sh        # Clean removal script
+│   ├── safe-exit.sh        # Safe-exit alias + Ctrl+D guard
+│   ├── mission-control.sh  # Manager Menu (F11)
+│   ├── help-reference.sh   # Help Reference (F12)
+│   └── tui/                # Shared TUI building blocks
 ├── docs/
+│   ├── SPEC.md             # Product specification
+│   ├── ARCHITECTURE.md     # Technical architecture
+│   ├── NAMING.md           # Naming conventions
 │   ├── ai-cli-workflow.md  # AI CLI integration guide
 │   ├── remote-access.md    # SSH and remote setup
 │   ├── windows-terminal.md # Windows Terminal configuration
-│   └── troubleshooting.md  # Common issues and solutions
+│   ├── troubleshooting.md  # Common issues and solutions
+│   └── specs/               # Sub-system specs (help, manager, status bar, ...)
+├── tools/                  # Repo maintenance scripts (CI checks, link checker)
+├── tests/                  # Test suite (local Docker + CI infra)
+├── scripts/                # Misc dev scripts (doctor.sh)
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── CLAUDE.md                # AI assistant development guidelines
+├── LICENSE
 └── README.md               # This file
 ```
 
-## 🛠️ Installation Details
+## Installation Details
 
 ### What It Does
 1. Installs tmux configuration with function key bindings
@@ -392,11 +380,11 @@ systemctl --user status tmux-console.service
 tmux ls   # console-1 .. console-10 (empty, freshly created)
 ```
 
-## 🛡️ Safe Exit Protection
+## Safe Exit Protection
 
 **Problem**: Typing `exit` in a tmux session kills the shell → destroys the session → you lose everything!
 
-**Solution**: Safe-exit wrapper that prompts before destroying sessions.
+**Solution**: An `exit` alias that prompts before destroying the session, plus Ctrl+D coverage.
 
 When you type `exit` in a tmux session:
 ```
@@ -414,15 +402,26 @@ Options:
   [n]           - Cancel, stay in session
 ```
 
-**Features**:
-- 🛡️ **Safe by default** - Enter/Space detaches without killing
-- ⚠️ **Requires confirmation** - Must type `y` to destroy session
-- 📚 **Educates users** - Shows consequences before action
-- 🚀 **Automatic installation** - Included in setup
+pTTY also guards against Ctrl+D (EOF). Inside a pTTY tmux session, the
+first Ctrl+D shows `Use "exit" to leave the shell.` instead of closing the
+terminal; typing `exit` then goes through the same prompt as above. This
+only applies inside tmux sessions — your regular local shell outside pTTY
+is unaffected.
 
-**See**: [safe exit specification](02-planning/specs/SAFE-EXIT-SPEC.md) for complete behavior details.
+**Mechanism**: a shell `exit` alias plus the shell's own `IGNOREEOF`
+(bash) / `IGNORE_EOF` (zsh) setting, scoped to interactive tmux sessions.
 
-## 🚨 Troubleshooting
+**Honest limits** — this is a guard against *accidental* exits, not a lock:
+- `\exit`, `command exit`, `builtin exit`, or an exit from inside a script
+  or subshell all bypass the alias by design.
+- `tmux kill-session` (from another terminal, the F11 manager menu, or an
+  external script), or `kill`/`kill -9` on the shell or tmux server, are
+  not caught here.
+- A crash of the shell or the tmux server is not caught here either.
+
+**See**: [safe exit specification](docs/specs/SAFE-EXIT-SPEC.md) for complete behavior details.
+
+## Troubleshooting
 
 ### Sessions Don't Exist After Reboot
 ```bash
@@ -467,7 +466,7 @@ Status bar uses Nerd Font glyphs from the Material Design Icons range
 
 Full diagnostic flow: [troubleshooting guide](docs/troubleshooting.md#icons--status-bar-display-issues).
 
-## 🤝 Contributing
+## Contributing
 
 Contributions welcome! Please read our [Contributing Guide](CONTRIBUTING.md).
 
@@ -478,11 +477,11 @@ Contributions welcome! Please read our [Contributing Guide](CONTRIBUTING.md).
 - More AI CLI tool integrations
 - Windows WSL optimization
 
-## 📄 License
+## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
-## 🌟 Why This Exists
+## Why This Exists
 
 Created out of frustration with losing hours of work when SSH connections crashed during:
 - Remote server updates with Claude Code
@@ -492,7 +491,7 @@ Created out of frustration with losing hours of work when SSH connections crashe
 
 **This tool makes remote server work with AI CLI tools much simpler and safer!**
 
-## 🧪 Testing Infrastructure
+## Testing Infrastructure
 
 Want to test pTTY on a real server? We provide automated testing infrastructure using **Oracle Cloud Free Tier**!
 
@@ -523,7 +522,7 @@ cd tests/scripts
 ### What You Get
 - **Free ARM server** (4 cores, 24GB RAM) on Oracle Cloud
 - **Automated installation** and configuration
-- **Comprehensive test suite** with 10+ test scenarios
+- **Test suite** with 10+ test scenarios
 - **Interactive testing menu** for manual validation
 - **One-click deployment/cleanup**
 
@@ -531,11 +530,11 @@ See [`tests/README.md`](tests/README.md) for detailed testing documentation.
 
 **🎉 Test your pTTY setup risk-free on real cloud infrastructure!**
 
-## 📐 Project Specification
+## Project Specification
 
 This project follows **spec-driven development**. All features and behavior are documented in:
 
-**[SPEC.md](02-planning/SPEC.md)** - Complete unified specification
+**[SPEC.md](docs/SPEC.md)** - Complete unified specification
 - F-key bindings and behavior
 - Console lifecycle and F-key bindings
 - Manager Menu (F11) specification
@@ -543,15 +542,15 @@ This project follows **spec-driven development**. All features and behavior are 
 - Status bar design
 - Icons and iconography
 
-**For contributors:** Please read [SPEC.md](02-planning/SPEC.md) before making changes.
+**For contributors:** Please read [SPEC.md](docs/SPEC.md) before making changes.
 
 **See also:**
-- `03-architecture/NAMING.md` - Naming conventions (pTTY/ptty/PersistentTTY)
+- `docs/NAMING.md` - Naming conventions (pTTY/ptty/PersistentTTY)
 - `docs/ICONS-NETWORK-SET.md` - Icon reference and usage
-- `03-architecture/ARCHITECTURE.md` - Technical architecture details
+- `docs/ARCHITECTURE.md` - Technical architecture details
 - `CLAUDE.md` - AI assistant development guidelines
 
-## 🔗 Related Projects
+## Related Projects
 
 - [tmux](https://github.com/tmux/tmux) - Terminal multiplexer
 - [tmux-sessionx](https://github.com/omerxx/tmux-sessionx) - Session manager with preview
@@ -559,9 +558,7 @@ This project follows **spec-driven development**. All features and behavior are 
 
 ---
 
-**⭐ Star this repo if it saved your work from an SSH crash!**
-
-Made with ❤️ for developers who code with AI on remote servers.
+If pTTY saved your session, a star helps others find it.
 
 **Note from the author:**
 This tool was born from my personal frustration with losing SSH sessions during unstable WiFi, laptop sleep, or moving between locations. I wanted something that "just works" without complex configuration. I'm not a tmux expert, but I value good developer experience (DevEx). If you find bugs or have ideas, contributions are welcome! We use conventional commits and encourage working with Claude Code via CLAUDE.md.
