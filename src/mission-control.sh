@@ -106,6 +106,15 @@ restart_session() {
         return 1
     fi
 
+    # Don't allow restarting special sessions (mirrors restart-confirm.sh)
+    if [ "$session" = "help" ] || [ "$session" = "manager" ]; then
+        echo ""
+        echo "⚠️  Cannot restart special session '$session'"
+        echo "Use F1-F10 to switch to a console first."
+        sleep 2
+        return 1
+    fi
+
     # Create temp script for background restart
     local temp_dir="${HOME}/.cache/tmux-console"
     mkdir -p "$temp_dir" && chmod 700 "$temp_dir"
@@ -221,9 +230,12 @@ show_mission_control() {
             r|R)
                 echo ""
                 echo "⚠  Restarting session '$session_name'..."
-                restart_session "$session_name"
-                echo ""
-                echo "✓ Session restarted. Press any key to continue..."
+                if restart_session "$session_name"; then
+                    echo ""
+                    echo "✓ Session restarted. Press any key to continue..."
+                else
+                    echo "Press any key to continue..."
+                fi
                 read -n 1
                 ;;
             ""|$'\n')
