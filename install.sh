@@ -3,6 +3,7 @@
 # curl -sSL https://raw.githubusercontent.com/zentala/pTTY/main/install.sh | bash
 
 set -e
+trap 'echo "[pTTY] Install failed at line $LINENO — nothing may be partially configured; re-run install.sh after fixing the error above." >&2' ERR
 
 PTTY_VERSION="0.2.0"
 MIN_TMUX_VERSION="3.2"
@@ -50,6 +51,7 @@ echo ""
 
 if [ "$DRY_RUN" -eq 1 ]; then
     echo -e "${YELLOW}DRY-RUN MODE — would perform:${NC}"
+    echo "  0. Request sudo up front if package installs are needed"
     echo "  1. Install missing deps:           tmux, fzf, gum (via apt/yum/pacman/brew)"
     echo "  2. Create directories:             $INSTALL_DIR, $BIN_DIR"
     echo "  3. Copy scripts:                   src/* → $INSTALL_DIR/"
@@ -84,23 +86,59 @@ if [ -f /.dockerenv ] || [ -n "${CI:-}" ] || [ -n "${CONTAINER:-}" ]; then
     echo -e "${YELLOW}   Set SKIP_TUI_DEPS=0 to force install them.${NC}"
 fi
 
+# Request sudo up front (once) if a later step is going to need it, instead of
+# prompting mid-install. Only ask when a package manager install is actually
+# on the path: tmux missing, or TUI deps (fzf/gum, apt/snap) will be installed.
+NEEDS_SUDO=0
+if [[ "$OSTYPE" != "darwin"* ]]; then
+    if ! command -v tmux &> /dev/null; then
+        NEEDS_SUDO=1
+    fi
+    if [ "$SKIP_TUI_DEPS" -eq 0 ]; then
+        NEEDS_SUDO=1
+    fi
+fi
+
+if [ "$NEEDS_SUDO" -eq 1 ]; then
+    echo -e "${YELLOW}🔑 This install needs sudo to install missing packages (tmux/fzf/gum) via your package manager.${NC}"
+    if [ -t 0 ]; then
+        sudo -v || { echo -e "${RED}❌ sudo access is required but was not granted.${NC}"; exit 1; }
+    else
+        echo -e "${YELLOW}⚠️  No TTY detected (e.g. curl | bash) — sudo may prompt and fail non-interactively.${NC}"
+        echo -e "${YELLOW}   If a package install below fails, clone the repo and run ./install.sh directly:${NC}"
+        echo -e "${YELLOW}     git clone https://github.com/zentala/pTTY.git && cd pTTY && ./install.sh${NC}"
+    fi
+fi
+
 # Check if tmux is installed
 if ! command -v tmux &> /dev/null; then
     echo -e "${YELLOW}📦 Installing tmux...${NC}"
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
         if command -v apt-get &> /dev/null; then
-            sudo apt-get update && sudo apt-get install -y tmux
+            sudo apt-get update && sudo apt-get install -y tmux || {
+                echo -e "${RED}❌ apt-get install tmux failed. Fix apt (network/sources) and re-run, or: sudo apt-get install -y tmux${NC}"
+                exit 1
+            }
         elif command -v yum &> /dev/null; then
-            sudo yum install -y tmux
+            sudo yum install -y tmux || {
+                echo -e "${RED}❌ yum install tmux failed. Fix yum repos and re-run, or: sudo yum install -y tmux${NC}"
+                exit 1
+            }
         elif command -v pacman &> /dev/null; then
-            sudo pacman -S tmux
+            sudo pacman -S tmux || {
+                echo -e "${RED}❌ pacman install tmux failed. Fix pacman and re-run, or: sudo pacman -S tmux${NC}"
+                exit 1
+            }
         else
             echo -e "${RED}❌ Cannot install tmux automatically. Please install tmux manually.${NC}"
             exit 1
         fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         if command -v brew &> /dev/null; then
-            brew install tmux
+            brew install tmux || {
+                echo -e "${RED}❌ brew install tmux failed. Fix Homebrew and re-run, or: brew install tmux${NC}"
+                exit 1
+            }
         else
             echo -e "${RED}❌ Please install tmux using Homebrew: brew install tmux${NC}"
             exit 1
@@ -181,6 +219,34 @@ else
 fi
 
 # Install gum (modern TUI)
+# Pinned to v0.14.0; sha256 taken from the release's own checksums.txt
+# (https://github.com/charmbracelet/gum/releases/download/v0.14.0/checksums.txt).
+GUM_VERSION="0.14.0"
+GUM_TARBALL="gum_${GUM_VERSION}_Linux_x86_64.tar.gz"
+GUM_SHA256="bf93c39d706fbb48883d983b3a71cd8b1617599a70204953573b66ed0c133630"
+
+download_gum_tarball() {
+    local dest="/tmp/gum.tar.gz"
+    rm -f "$dest"
+    if ! wget -q "https://github.com/charmbracelet/gum/releases/download/v${GUM_VERSION}/${GUM_TARBALL}" -O "$dest"; then
+        echo -e "${RED}  ❌ Failed to download $GUM_TARBALL${NC}"
+        rm -f "$dest"
+        return 1
+    fi
+    local actual_sha256
+    actual_sha256="$(sha256sum "$dest" | awk '{print $1}')"
+    if [ "$actual_sha256" != "$GUM_SHA256" ]; then
+        echo -e "${RED}  ❌ sha256 mismatch for $GUM_TARBALL${NC}"
+        echo -e "${RED}     expected: $GUM_SHA256${NC}"
+        echo -e "${RED}     actual:   $actual_sha256${NC}"
+        rm -f "$dest"
+        return 1
+    fi
+    tar -xzf "$dest" -C /tmp
+    sudo mv /tmp/gum /usr/local/bin/
+    rm -f "$dest"
+}
+
 if ! command -v gum &> /dev/null; then
     echo -e "${YELLOW}  Installing gum...${NC}"
     if [[ "$OSTYPE" == "linux-gnu"* ]]; then
@@ -189,17 +255,11 @@ if ! command -v gum &> /dev/null; then
             sudo snap install gum 2>/dev/null || {
                 # Fallback to manual install
                 echo -e "${YELLOW}  ⚠️  snap failed, trying manual install...${NC}"
-                wget -q https://github.com/charmbracelet/gum/releases/download/v0.14.0/gum_0.14.0_linux_amd64.tar.gz -O /tmp/gum.tar.gz
-                tar -xzf /tmp/gum.tar.gz -C /tmp
-                sudo mv /tmp/gum /usr/local/bin/
-                rm /tmp/gum.tar.gz
+                download_gum_tarball || echo -e "${YELLOW}  ⚠️  gum manual install failed, will use fallback TUI${NC}"
             }
         elif command -v apt-get &> /dev/null; then
             # Debian/Ubuntu - manual install
-            wget -q https://github.com/charmbracelet/gum/releases/download/v0.14.0/gum_0.14.0_linux_amd64.tar.gz -O /tmp/gum.tar.gz
-            tar -xzf /tmp/gum.tar.gz -C /tmp
-            sudo mv /tmp/gum /usr/local/bin/
-            rm /tmp/gum.tar.gz
+            download_gum_tarball || echo -e "${YELLOW}  ⚠️  gum manual install failed, will use fallback TUI${NC}"
         else
             echo -e "${YELLOW}  ⚠️  gum installation not available, will use fallback TUI${NC}"
         fi
@@ -331,33 +391,42 @@ EOF
 
 chmod +x "$BIN_DIR"/*
 
-# Add to PATH and safe-exit if needed
-if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
-    echo -e "${YELLOW}🛤️  Adding $BIN_DIR to PATH...${NC}"
+# Add PATH + safe-exit hooks to an rc file, idempotently. Guards on a marker
+# comment in the FILE (not the current process's $PATH) so a fresh curl|bash
+# re-run never duplicates the block. Also migrates the old unmarked block
+# (pre-marker installs), identified by its distinctive first comment line.
+RC_MARKER_START="# >>> pTTY >>>"
+RC_MARKER_END="# <<< pTTY <<<"
 
-    # Add to bashrc
-    if [ -f "$HOME/.bashrc" ]; then
-        echo "" >> "$HOME/.bashrc"
-        echo "# tmux-persistent-console" >> "$HOME/.bashrc"
-        echo "export PATH=\"\$HOME/bin:\$PATH\"" >> "$HOME/.bashrc"
-        echo "" >> "$HOME/.bashrc"
-        echo "# Safe exit wrapper for tmux sessions" >> "$HOME/.bashrc"
-        echo "[ -f ~/.tmux-persistent-console/safe-exit.sh ] && source ~/.tmux-persistent-console/safe-exit.sh" >> "$HOME/.bashrc"
+append_rc_block() {
+    local rc_file="$1"
+    [ -f "$rc_file" ] || return 0
+
+    if grep -qF "$RC_MARKER_START" "$rc_file"; then
+        return 0
     fi
 
-    # Add to zshrc
-    if [ -f "$HOME/.zshrc" ]; then
-        echo "" >> "$HOME/.zshrc"
-        echo "# tmux-persistent-console" >> "$HOME/.zshrc"
-        echo "export PATH=\"\$HOME/bin:\$PATH\"" >> "$HOME/.zshrc"
-        echo "" >> "$HOME/.zshrc"
-        echo "# Safe exit wrapper for tmux sessions" >> "$HOME/.zshrc"
-        echo "[ -f ~/.tmux-persistent-console/safe-exit.sh ] && source ~/.tmux-persistent-console/safe-exit.sh" >> "$HOME/.zshrc"
+    # Migrate the old unmarked block left by installs before the marker existed.
+    if grep -qF "# tmux-persistent-console" "$rc_file"; then
+        sed -i '/^# tmux-persistent-console$/,+2d' "$rc_file"
+        sed -i '/^# Safe exit wrapper for tmux sessions$/,+1d' "$rc_file"
     fi
 
-    # Add to current session
-    export PATH="$BIN_DIR:$PATH"
-fi
+    {
+        echo ""
+        echo "$RC_MARKER_START"
+        echo "export PATH=\"\$HOME/bin:\$PATH\""
+        echo "[ -f ~/.tmux-persistent-console/safe-exit.sh ] && source ~/.tmux-persistent-console/safe-exit.sh"
+        echo "$RC_MARKER_END"
+    } >> "$rc_file"
+}
+
+echo -e "${YELLOW}🛤️  Ensuring $BIN_DIR is on PATH...${NC}"
+append_rc_block "$HOME/.bashrc"
+append_rc_block "$HOME/.zshrc"
+
+# Add to current session
+export PATH="$BIN_DIR:$PATH"
 
 rm -f "$INSTALL_DIR/.no-systemd"
 if [ "$NO_SYSTEMD" -eq 1 ]; then
