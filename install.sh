@@ -3,10 +3,22 @@
 # curl -sSL https://raw.githubusercontent.com/zentala/pTTY/main/install.sh | bash
 
 set -e
+umask 022
 trap 'echo "[pTTY] Install failed at line $LINENO — nothing may be partially configured; re-run install.sh after fixing the error above." >&2' ERR
 
 PTTY_VERSION="0.2.0"
 MIN_TMUX_VERSION="3.2"
+
+# Remote files are pinned to a tagged release by default (integrity-verified
+# against SHA256SUMS below). Set PTTY_REF=main for a dev install that tracks
+# the branch tip (unverified against the pinned MANIFEST_SHA256 — expect the
+# manifest check to fail unless you also override MANIFEST_SHA256).
+PTTY_REF="${PTTY_REF:-v$PTTY_VERSION}"
+
+# sha256 of the SHA256SUMS manifest at $PTTY_REF, generated with
+# tools/gen-sha256sums.sh. Every remote-downloaded file is verified against
+# entries in that manifest before it is made executable.
+MANIFEST_SHA256="5407ce35fdae3a185ad4dbed928ef4f678feb4bb1f8af7fd8c4f4705e1c4bdc1"
 
 # Colors for output
 RED='\033[0;31m'
@@ -100,6 +112,8 @@ if [[ "$OSTYPE" != "darwin"* ]]; then
 fi
 
 if [ "$NEEDS_SUDO" -eq 1 ]; then
+    # Files downloaded below (gum tarball, remote pTTY scripts) are sha256
+    # verified before use — sudo only ever installs or moves checked bytes.
     echo -e "${YELLOW}🔑 This install needs sudo to install missing packages (tmux/fzf/gum) via your package manager.${NC}"
     if [ -t 0 ]; then
         sudo -v || { echo -e "${RED}❌ sudo access is required but was not granted.${NC}"; exit 1; }
@@ -205,6 +219,7 @@ if ! command -v fzf &> /dev/null; then
             sudo pacman -S fzf
         else
             echo -e "${YELLOW}  ⚠️  fzf not available in package manager, trying git install...${NC}"
+            echo -e "${YELLOW}  ⚠️  unpinned: cloning fzf's default branch tip, not a tagged release${NC}"
             git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && ~/.fzf/install --bin
         fi
     elif [[ "$OSTYPE" == "darwin"* ]]; then
@@ -318,8 +333,43 @@ if [ -d "$REPO_ROOT/src" ]; then
     fi
 else
     # Remote installation (curl-piped install with no local checkout)
-    REPO_URL_BASE="https://raw.githubusercontent.com/zentala/pTTY/main"
+    REPO_URL_BASE="https://raw.githubusercontent.com/zentala/pTTY/$PTTY_REF"
     echo -e "${YELLOW}⬇️  Downloading files from ${REPO_URL_BASE}${NC}"
+
+    # Fetch and pin-verify the manifest itself before trusting any entry in it.
+    MANIFEST_FILE="$(mktemp)"
+    if ! curl -fsSL "$REPO_URL_BASE/SHA256SUMS" -o "$MANIFEST_FILE"; then
+        echo -e "${RED}❌ Failed to download SHA256SUMS from $REPO_URL_BASE/SHA256SUMS${NC}"
+        exit 1
+    fi
+    ACTUAL_MANIFEST_SHA256="$(sha256sum "$MANIFEST_FILE" | awk '{print $1}')"
+    if [ "$ACTUAL_MANIFEST_SHA256" != "$MANIFEST_SHA256" ]; then
+        echo -e "${RED}❌ SHA256SUMS manifest sha256 mismatch — refusing to trust remote files${NC}"
+        echo -e "${RED}   expected: $MANIFEST_SHA256${NC}"
+        echo -e "${RED}   actual:   $ACTUAL_MANIFEST_SHA256${NC}"
+        exit 1
+    fi
+
+    # Verifies $file's sha256 against the entry for $relpath in $manifest.
+    # Aborts the install on any mismatch or missing entry.
+    verify_sha256() {
+        local file="$1" relpath="$2" manifest="$3"
+        local expected actual
+        expected="$(awk -v p="$relpath" '$2 == p { print $1 }' "$manifest")"
+        if [ -z "$expected" ]; then
+            echo -e "${RED}❌ No manifest entry for $relpath${NC}"
+            return 1
+        fi
+        actual="$(sha256sum "$file" | awk '{print $1}')"
+        if [ "$actual" != "$expected" ]; then
+            echo -e "${RED}❌ sha256 mismatch for $relpath${NC}"
+            echo -e "${RED}   expected: $expected${NC}"
+            echo -e "${RED}   actual:   $actual${NC}"
+            return 1
+        fi
+        return 0
+    }
+
     for f in \
         setup.sh connect.sh tmux.conf tmux-console.service uninstall.sh \
         safe-exit.sh console-help.sh help-reference.sh \
@@ -330,6 +380,7 @@ else
             echo -e "${RED}❌ Failed to download $f from $REPO_URL_BASE/src/$f${NC}"
             exit 1
         fi
+        verify_sha256 "$INSTALL_DIR/$f" "src/$f" "$MANIFEST_FILE" || exit 1
     done
 
     mkdir -p "$INSTALL_DIR/tui"
@@ -338,6 +389,7 @@ else
             echo -e "${RED}❌ Failed to download tui/$f${NC}"
             exit 1
         fi
+        verify_sha256 "$INSTALL_DIR/tui/$f" "src/tui/$f" "$MANIFEST_FILE" || exit 1
     done
 
     mkdir -p "$INSTALL_DIR/lib"
@@ -346,12 +398,16 @@ else
             echo -e "${RED}❌ Failed to download lib/$f${NC}"
             exit 1
         fi
+        verify_sha256 "$INSTALL_DIR/lib/$f" "src/lib/$f" "$MANIFEST_FILE" || exit 1
     done
 
     if ! curl -fsSL "$REPO_URL_BASE/scripts/doctor.sh" -o "$INSTALL_DIR/doctor.sh"; then
         echo -e "${RED}❌ Failed to download scripts/doctor.sh${NC}"
         exit 1
     fi
+    verify_sha256 "$INSTALL_DIR/doctor.sh" "scripts/doctor.sh" "$MANIFEST_FILE" || exit 1
+
+    rm -f "$MANIFEST_FILE"
 fi
 
 # Source location used by the rest of the installer (systemd service etc.)
