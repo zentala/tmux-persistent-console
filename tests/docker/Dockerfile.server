@@ -46,6 +46,7 @@ RUN useradd -m -s /bin/bash devuser && \
 COPY install.sh /tmp/ptty/install.sh
 COPY src/ /tmp/ptty/src/
 COPY scripts/ /tmp/ptty/scripts/
+COPY tests/ /tmp/ptty/tests/
 
 RUN su - testuser -c 'cd /tmp/ptty && CI=1 bash install.sh && CI=1 bash scripts/doctor.sh' && \
     su - devuser -c 'cd /tmp/ptty && CI=1 bash install.sh && CI=1 bash scripts/doctor.sh' && \

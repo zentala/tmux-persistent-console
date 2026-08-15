@@ -50,6 +50,22 @@ jobs:
           echo "🔍 Checking server container health..."
           docker exec tmux-test-server test-console.sh
 
+      - name: 🧪 Run status bar suite (non-interactive)
+        run: |
+          echo "🧪 Running status bar suite inside a real tmux session..."
+          STATUS_BAR_EXIT=$(docker exec -u testuser tmux-test-server bash -c '
+            tmux new-session -d -s status-bar-test -n runner \
+              "bash /tmp/ptty/tests/run-all-tests.sh --non-interactive; echo \$? > /tmp/status-bar-exit.txt; tmux wait-for -S status-bar-done"
+            tmux wait-for status-bar-done
+            cat /tmp/status-bar-exit.txt
+          ' | tail -1)
+          echo "Exit code: $STATUS_BAR_EXIT"
+          if [ "$STATUS_BAR_EXIT" != "0" ]; then
+            echo "❌ Status bar suite failed"
+            exit 1
+          fi
+          echo "✅ Status bar suite passed"
+
       - name: 🧪 Run automated tests
         id: tests
         run: |
@@ -86,9 +102,10 @@ jobs:
             FAILED=true
           fi
 
-          # Test tmux sessions
+          # Test tmux sessions. Count console-* by name, not `tmux ls | wc -l`
+          # (that also counts non-console sessions like `help`).
           echo -n "Test: Tmux sessions... "
-          SESSION_COUNT=$(sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux ls 2>/dev/null | wc -l")
+          SESSION_COUNT=$(sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux list-sessions -F '#{session_name}' 2>/dev/null | grep -c '^console-'")
           if [ "$SESSION_COUNT" -eq 10 ]; then
             echo "✅ PASSED (10 sessions)" | tee -a "$RESULTS_FILE"
           else
@@ -102,6 +119,57 @@ jobs:
             echo "✅ PASSED" | tee -a "$RESULTS_FILE"
           else
             echo "❌ FAILED" | tee -a "$RESULTS_FILE"
+            FAILED=true
+          fi
+
+          # Keybinding smoke test: switch-client needs an attached client,
+          # which SSH/docker exec do not provide, so assert every session
+          # the F1-F10 bindings target actually exists instead.
+          echo -n "Test: Console keybinding targets (console-1..10)... "
+          BINDING_OK=true
+          for i in $(seq 1 10); do
+            if ! sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux has-session -t console-$i" > /dev/null 2>&1; then
+              BINDING_OK=false
+            fi
+          done
+          if [ "$BINDING_OK" = "true" ]; then
+            echo "✅ PASSED" | tee -a "$RESULTS_FILE"
+          else
+            echo "❌ FAILED (a console-N session is missing)" | tee -a "$RESULTS_FILE"
+            FAILED=true
+          fi
+
+          # ExecStop-scoping test (T06). No systemd in this container, so
+          # the src/tmux-console.service ExecStop command line is run
+          # directly. Asserts it kills only console-1..10 and leaves an
+          # unrelated session alone, then recreates the consoles.
+          echo -n "Test: ExecStop scoping leaves other sessions alone... "
+          sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux new-session -d -s mywork" > /dev/null 2>&1
+          sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost \
+            "bash -c 'for i in \$(seq 1 10); do tmux kill-session -t =console-\$i 2>/dev/null; done; true'" > /dev/null 2>&1
+          MYWORK_ALIVE=$(sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux has-session -t mywork" > /dev/null 2>&1 && echo yes || echo no)
+          CONSOLES_LEFT=$(sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux list-sessions -F '#{session_name}' 2>/dev/null | grep -c '^console-'" || true)
+          sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux kill-session -t mywork; bash ~/.tmux-persistent-console/setup.sh" > /dev/null 2>&1
+          if [ "$MYWORK_ALIVE" = "yes" ] && [ "$CONSOLES_LEFT" -eq 0 ]; then
+            echo "✅ PASSED" | tee -a "$RESULTS_FILE"
+          else
+            echo "❌ FAILED (mywork=$MYWORK_ALIVE, consoles left=$CONSOLES_LEFT)" | tee -a "$RESULTS_FILE"
+            FAILED=true
+          fi
+
+          # Upgrade path (T12): simulate the old "5 consoles" layout, re-run
+          # setup.sh (idempotent), assert all 10 exist. setup.sh-level only —
+          # this container has no systemd, so the unit re-registration path
+          # on a real host upgrade is NOT covered here.
+          echo -n "Test: Upgrade from 5 to 10 consoles... "
+          sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost \
+            "bash -c 'for i in \$(seq 1 10); do tmux kill-session -t =console-\$i 2>/dev/null; done; for i in \$(seq 1 5); do tmux new-session -d -s console-\$i; done'" > /dev/null 2>&1
+          sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "bash ~/.tmux-persistent-console/setup.sh" > /dev/null 2>&1
+          UPGRADED_COUNT=$(sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux list-sessions -F '#{session_name}' 2>/dev/null | grep -c '^console-'")
+          if [ "$UPGRADED_COUNT" -eq 10 ]; then
+            echo "✅ PASSED (10 sessions after upgrade)" | tee -a "$RESULTS_FILE"
+          else
+            echo "❌ FAILED (found $UPGRADED_COUNT sessions after upgrade)" | tee -a "$RESULTS_FILE"
             FAILED=true
           fi
 

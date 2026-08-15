@@ -158,9 +158,10 @@ else
     exit 1
 fi
 
-# Test 2: Tmux sessions exist
+# Test 2: Tmux sessions exist. Count console-* by name, not `tmux ls | wc -l`
+# (that also counts non-console sessions like `help`).
 echo -n "Test 2: Tmux sessions... "
-SESSION_COUNT=$(sshpass -p testpassword ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null testuser@tmux-server "tmux ls 2>/dev/null | wc -l")
+SESSION_COUNT=$(sshpass -p testpassword ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null testuser@tmux-server "tmux list-sessions -F '#{session_name}' 2>/dev/null | grep -c '^console-'")
 if [ "$SESSION_COUNT" -eq 10 ]; then
     echo "✅ PASSED (10 sessions)"
 else
@@ -177,9 +178,17 @@ else
     exit 1
 fi
 
-# Test 4: Session switching
+# Test 4: Console keybinding targets. `switch-client` needs an attached
+# client, which this container does not have, so assert instead that every
+# session the F1-F10 bindings target actually exists.
 echo -n "Test 4: Session switching... "
-if sshpass -p testpassword ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null testuser@tmux-server "tmux has-session -t console-1 && tmux has-session -t console-10" > /dev/null 2>&1; then
+BINDING_OK=true
+for i in $(seq 1 10); do
+    if ! sshpass -p testpassword ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null testuser@tmux-server "tmux has-session -t console-$i" > /dev/null 2>&1; then
+        BINDING_OK=false
+    fi
+done
+if [ "$BINDING_OK" = "true" ]; then
     echo "✅ PASSED"
 else
     echo "❌ FAILED"
