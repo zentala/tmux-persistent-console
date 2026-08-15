@@ -2,14 +2,14 @@
 # F12 - Static Help Reference Window
 # Simple, clean documentation without decorative borders
 
-VERSION="1.0.0"
+VERSION="0.2.0"  # keep in sync with install.sh PTTY_VERSION
 
 # Clear screen and show help
 clear
 
 cat << 'EOF'
 
-  🖥️  PERSISTENT CONSOLE v1.0.0 - Quick Reference
+  🖥️  PERSISTENT CONSOLE v0.2.0 - Quick Reference
 
 
   KEYBOARD SHORTCUTS

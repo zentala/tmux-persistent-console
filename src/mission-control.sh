@@ -1,9 +1,9 @@
 #!/bin/bash
 # Mission Control - F11 panel for tmux session management
-# Persistent Console v1.0.0
+# Persistent Console v0.2.0
 
 # Version info
-VERSION="1.0.0"
+VERSION="0.2.0"  # keep in sync with install.sh PTTY_VERSION
 HEADER="🖥️  PERSISTENT CONSOLE v${VERSION}"
 
 # Colors
