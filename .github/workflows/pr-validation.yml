@@ -151,7 +151,8 @@ jobs:
             CLAUDE.md \
             docs/troubleshooting.md \
             docs/windows-terminal.md \
-            .plan/REVIEW.md
+            docs/SPEC.md \
+            CONTRIBUTING.md
 
       - name: 📋 Validate README updates
         run: |
