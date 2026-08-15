@@ -4,6 +4,8 @@ on:
   pull_request:
     branches: [ main, develop ]
     types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [ main ]
 
 env:
   TF_VERSION: "1.6.0"
@@ -170,6 +172,146 @@ jobs:
           else
             echo "📝 README.md not modified in this PR"
           fi
+
+  # Fast native check: all 10 console sessions come up from a clean tmux server
+  session-sanity:
+    name: 🖥️ Session Sanity
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔧 Install tmux
+        run: sudo apt-get update && sudo apt-get install -y tmux
+
+      - name: 🚀 Start tmux server and create console sessions
+        run: |
+          mkdir -p "$HOME/.tmux-persistent-console"
+          cp -r src/. "$HOME/.tmux-persistent-console/"
+          tmux -f src/tmux.conf start-server
+          bash src/setup.sh
+
+      - name: ✅ Assert 10 console-* sessions exist
+        run: |
+          COUNT=$(tmux ls | grep -c '^console-')
+          echo "Found $COUNT console-* sessions"
+          if [ "$COUNT" -ne 10 ]; then
+            echo "::error::expected 10 console-* sessions, found $COUNT"
+            exit 1
+          fi
+          tmux has-session -t console-1
+          tmux has-session -t console-10
+          echo "✅ console-1 and console-10 both present"
+
+  # Fast pure-bash check: install.sh, CHANGELOG.md (and a release tag) agree
+  version-consistency:
+    name: 🔢 Version Consistency
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔍 Compare install.sh, CHANGELOG.md, and tag versions
+        run: |
+          INSTALL_VERSION=$(grep -oP '^PTTY_VERSION="\K[^"]+' install.sh)
+          echo "install.sh PTTY_VERSION: $INSTALL_VERSION"
+
+          CHANGELOG_VERSION=$(grep -oP '^## \[\K[0-9]+\.[0-9]+\.[0-9]+(?=\])' CHANGELOG.md | head -1)
+          echo "CHANGELOG.md top entry: $CHANGELOG_VERSION"
+
+          if [ -z "$INSTALL_VERSION" ] || [ -z "$CHANGELOG_VERSION" ]; then
+            echo "::error::could not extract a version from install.sh or CHANGELOG.md"
+            exit 1
+          fi
+
+          if [ "$INSTALL_VERSION" != "$CHANGELOG_VERSION" ]; then
+            echo "::error::install.sh PTTY_VERSION ($INSTALL_VERSION) != CHANGELOG.md top entry ($CHANGELOG_VERSION)"
+            exit 1
+          fi
+          echo "✅ install.sh and CHANGELOG.md agree on $INSTALL_VERSION"
+
+          if [[ "${GITHUB_REF:-}" == refs/tags/v* ]]; then
+            TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+            echo "Tag version: $TAG_VERSION"
+            if [ "$TAG_VERSION" != "$INSTALL_VERSION" ]; then
+              echo "::error::tag (v$TAG_VERSION) does not match install.sh/CHANGELOG version ($INSTALL_VERSION)"
+              exit 1
+            fi
+            echo "✅ Tag matches install.sh/CHANGELOG version"
+          fi
+
+  # Native systemd roundtrip: install.sh's real (non-CI-shortcut) path installs
+  # the autostart service, then the shipped uninstaller must remove every
+  # trace of it. Runs on the bare runner (not Docker — the Docker test harness
+  # in tests/docker/ does not run systemd inside its containers) because
+  # GitHub's ubuntu-latest runners are real VMs with systemd as PID 1.
+  install-uninstall-roundtrip:
+    name: 🔁 Install/Uninstall Roundtrip
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔧 Install tmux
+        run: sudo apt-get update && sudo apt-get install -y tmux
+
+      - name: 🔌 Start a user systemd session
+        run: |
+          sudo loginctl enable-linger "$(id -un)"
+          sudo systemctl start "user@$(id -u).service"
+          {
+            echo "XDG_RUNTIME_DIR=/run/user/$(id -u)"
+            echo "DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/$(id -u)/bus"
+          } >> "$GITHUB_ENV"
+
+      - name: 📦 Run install.sh (real systemd path)
+        run: |
+          # Actions sets CI=true, which install.sh treats as a container/CI
+          # shortcut and skips the systemd service entirely. Unset it so this
+          # job exercises the real end-user install path we ship.
+          unset CI CONTAINER
+          bash install.sh
+
+      - name: ✅ Verify service enabled and sessions exist
+        run: |
+          systemctl --user is-enabled tmux-console.service
+          COUNT=$(tmux ls | grep -c '^console-')
+          if [ "$COUNT" -ne 10 ]; then
+            echo "::error::expected 10 console-* sessions after install, found $COUNT"
+            exit 1
+          fi
+
+      - name: 🗑️ Run the shipped uninstaller
+        run: bash "$HOME/bin/uninstall-console"
+
+      - name: ✅ Assert uninstall left no trace
+        run: |
+          if systemctl --user is-enabled tmux-console.service 2>/dev/null; then
+            echo "::error::tmux-console.service is still enabled after uninstall"
+            exit 1
+          fi
+          if [ -f "$HOME/.config/systemd/user/tmux-console.service" ]; then
+            echo "::error::service unit file was not removed"
+            exit 1
+          fi
+          if tmux ls 2>/dev/null | grep -q '^console-'; then
+            echo "::error::console-* sessions still present after uninstall"
+            exit 1
+          fi
+          for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
+            if [ -f "$rc" ] && grep -qF "# >>> pTTY >>>" "$rc"; then
+              echo "::error::pTTY rc block still present in $rc"
+              exit 1
+            fi
+          done
+          echo "✅ uninstall left no systemd unit, no sessions, no rc blocks"
 
   # Changes analysis
   change-detection:

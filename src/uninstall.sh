@@ -45,18 +45,31 @@ if [ -f ~/.tmux.conf ] && grep -q "# tmux-persistent-console config" ~/.tmux.con
     echo "   ✓ Removed ~/.tmux.conf"
 fi
 
-# Remove any aliases or shortcuts
-if [ -f ~/.bashrc ] && grep -q "connect-console" ~/.bashrc; then
-    echo "🗑️  Removing bash aliases..."
-    sed -i '/connect-console/d' ~/.bashrc
-    echo "   ✓ Removed aliases from ~/.bashrc"
-fi
+# Remove the PATH + safe-exit block install.sh appends to rc files. Matches
+# both the current marker format and the legacy unmarked block (installs from
+# before the marker existed), so old installs uninstall cleanly too.
+RC_MARKER_START="# >>> pTTY >>>"
+RC_MARKER_END="# <<< pTTY <<<"
 
-if [ -f ~/.zshrc ] && grep -q "connect-console" ~/.zshrc; then
-    echo "🗑️  Removing zsh aliases..."
-    sed -i '/connect-console/d' ~/.zshrc
-    echo "   ✓ Removed aliases from ~/.zshrc"
-fi
+remove_rc_block() {
+    local rc_file="$1"
+    [ -f "$rc_file" ] || return 0
+
+    if grep -qF "$RC_MARKER_START" "$rc_file"; then
+        sed -i "/$RC_MARKER_START/,/$RC_MARKER_END/d" "$rc_file"
+        echo "   ✓ Removed pTTY block from $rc_file"
+    fi
+
+    if grep -qF "# tmux-persistent-console" "$rc_file"; then
+        sed -i '/^# tmux-persistent-console$/,+2d' "$rc_file"
+        sed -i '/^# Safe exit wrapper for tmux sessions$/,+1d' "$rc_file"
+        echo "   ✓ Removed legacy pTTY block from $rc_file"
+    fi
+}
+
+echo "🗑️  Removing PATH/safe-exit hooks..."
+remove_rc_block ~/.bashrc
+remove_rc_block ~/.zshrc
 
 rm -f ~/bin/setup-console-sessions ~/bin/connect-console ~/bin/console-help ~/bin/ptty-doctor ~/bin/uninstall-console
 
