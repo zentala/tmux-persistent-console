@@ -73,6 +73,10 @@ jobs:
         run: |
           bash tools/check-tmux-references.sh
 
+      - name: 🧪 Unit tests
+        run: |
+          bash tests/unit/test-session-list.sh
+
       - name: 🔗 Validate markdown links
         run: |
           bash tools/check-markdown-links.sh README.md CLAUDE.md
