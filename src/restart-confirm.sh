@@ -1,5 +1,5 @@
 #!/bin/bash
-# Ctrl+R - Restart current console with confirmation
+# Ctrl+B R - Restart current console with confirmation
 # Uses gum for beautiful confirmation dialog
 
 # Get current session

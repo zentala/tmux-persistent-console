@@ -190,7 +190,7 @@ show_mission_control() {
         --height=100% \
         --border \
         --prompt="> " \
-        --header="$HEADER | [ENTER] Switch  [Ctrl+R] Restart  [ESC] Close" \
+        --header="$HEADER | [ENTER] Select  [ESC] Close" \
         --preview="$preview_cmd" \
         --preview-window=right:60% \
         --reverse)
