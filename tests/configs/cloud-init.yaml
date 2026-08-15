@@ -1,11 +1,19 @@
 #cloud-config
 # Cloud-init configuration for tmux-persistent-console testing
 
+# Key-only SSH: never accept password logins even if one gets set somehow.
+ssh_pwauth: false
+
 users:
   - default
+  # NOPASSWD sudo is required so the non-interactive `curl | bash` installer can
+  # run apt/loginctl without a TTY. It is only safe because SSH ingress is scoped
+  # to the deployer's CIDR (see allowed_ssh_cidr in terraform/main.tf) and login
+  # is key-only — do NOT widen the firewall to 0.0.0.0/0.
   - name: testuser
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
+    lock_passwd: true
     ssh_authorized_keys:
       - ${ssh_public_key}
 

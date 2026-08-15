@@ -11,7 +11,10 @@ services:
     networks:
       - tmux-test-net
     ports:
-      - "2222:22"  # SSH access from host
+      # Bind to loopback only: this image ships fixed test passwords and root
+      # password login, so it must never be reachable from the LAN/internet.
+      # The client container reaches it over the internal tmux-test-net regardless.
+      - "127.0.0.1:2222:22"  # SSH access from host (loopback only)
     environment:
       - TZ=UTC
     volumes:
@@ -67,7 +70,7 @@ services:
     networks:
       - tmux-test-net
     ports:
-      - "2223:22"  # Different SSH port
+      - "127.0.0.1:2223:22"  # Different SSH port (loopback only)
     environment:
       - TZ=UTC
     profiles:

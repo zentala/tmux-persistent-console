@@ -14,6 +14,10 @@ compartment_ocid    = "ocid1.compartment.oc1..aaaaaaaa..."
 # SSH Configuration
 ssh_public_key_path = "~/.ssh/id_rsa.pub"
 
+# CIDR allowed to reach SSH/web ports. Required — scope it to your own address.
+# Never 0.0.0.0/0 (terraform will reject it): this box has NOPASSWD sudo.
+allowed_ssh_cidr    = "203.0.113.7/32"  # replace with YOUR public IP /32
+
 # Instance Configuration
 instance_name       = "tmux-console-test"
 
