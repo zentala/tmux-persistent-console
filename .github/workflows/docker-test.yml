@@ -16,6 +16,9 @@ on:
       - 'tests/docker/**'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   docker-test:
     name: 🧪 Docker-based Testing
