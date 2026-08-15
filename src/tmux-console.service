@@ -8,5 +8,31 @@ ExecStart=/bin/bash %h/.tmux-persistent-console/setup.sh
 ExecStop=/bin/bash -c 'for i in $(seq 1 10); do /usr/bin/tmux kill-session -t =console-$i 2>/dev/null; done; true'
 RemainAfterExit=yes
 
+# --- Hardening ---
+# This service spawns interactive shells (console-1..10) where the user runs
+# arbitrary commands: compilers, package managers, docker, AI coding agents.
+# Directives below are chosen to reduce blast radius without blocking that
+# use case. Do NOT add MemoryDenyWriteExecute, SystemCallFilter, or
+# RestrictNamespaces here: they break interpreters/JITs and container
+# tooling that users legitimately run inside their consoles.
+NoNewPrivileges=true
+# ProtectSystem=strict was considered but rejected: it makes the whole
+# filesystem read-only except explicit ReadWritePaths, and users run dev
+# work anywhere under $HOME (not just .tmux-persistent-console/.cache), so
+# strict would break normal usage. =true only read-protects /usr and
+# /boot/efi, which is safe for a shell-spawning service.
+ProtectSystem=true
+# PrivateTmp is intentionally NOT set: tmux's default socket dir is
+# /tmp/tmux-$UID (no -S/TMUX_TMPDIR override anywhere in this repo).
+# systemd's PrivateTmp gives the service its own mount-namespaced /tmp, which
+# would hide that socket from the user's normal login shells trying to
+# `tmux attach` — breaking the product's core feature.
+# ProtectHome is intentionally NOT set: the service must write under
+# %h/.tmux-persistent-console and %h/.cache, and interactive shells need
+# full read-write access to the rest of $HOME.
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+ProtectKernelModules=true
+
 [Install]
 WantedBy=default.target
