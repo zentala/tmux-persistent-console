@@ -64,7 +64,7 @@
 │  Themes:        ~/.vps/sessions/themes/                     │
 │  Crash Dumps:   ~/.ptty.crash.f(n).dump                    │
 │                                                             │
-│  Press Esc or Ctrl+F12 to close                            │
+│  Leave: Ctrl+F1-F10. Close: 'tmux kill-session -t help'.    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
