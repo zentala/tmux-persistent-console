@@ -109,7 +109,8 @@ jobs:
   security-check:
     name: 🔒 Security Check
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    # TruffleHog diffs base..head — only meaningful on pull_request events
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
 
     steps:
       - name: 📥 Checkout PR
