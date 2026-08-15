@@ -26,16 +26,18 @@ build_session_list() {
         return 1
     fi
 
-    local idx=1
     while IFS= read -r session; do
-        local status="○"  # inactive
+        local status="○"  # foreground command is the login shell (idle)
         local windows=$(tmux list-windows -t "$session" 2>/dev/null | wc -l)
         local current_window=$(tmux list-windows -t "$session" -F "#{window_active} #{window_name} #{pane_current_command}" 2>/dev/null | grep "^1" | cut -d' ' -f2-)
 
-        # Check if session has active processes
-        if tmux list-panes -t "$session" -F "#{pane_pid}" &>/dev/null; then
-            status="●"
-        fi
+        # ● when the active pane runs something other than a login shell
+        # (bash/zsh/sh/fish); ○ when it's idle at the shell prompt.
+        local active_cmd=$(tmux display-message -p -t "$session" '#{pane_current_command}' 2>/dev/null)
+        case "$active_cmd" in
+            bash|zsh|sh|fish|"") ;;
+            *) status="●" ;;
+        esac
 
         # Get F-key mapping
         local fkey=""
@@ -65,36 +67,7 @@ build_session_list() {
 
         # Output format: "marker status session fkey | window_info"
         printf "%s %s %-15s %s │ %s\n" "$marker" "$status" "$session" "$fkey" "$window_info"
-
-        idx=$((idx + 1))
     done <<< "$sessions"
-}
-
-# Preview pane content for selected session
-preview_session() {
-    local line="$1"
-    local session=$(echo "$line" | awk '{print $3}')
-
-    if [ -z "$session" ]; then
-        echo "Select a session to see preview"
-        return
-    fi
-
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "Session: $session"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-
-    # Show session info
-    tmux list-windows -t "$session" -F "Window #{window_index}: #{window_name} (#{window_panes} panes)" 2>/dev/null || echo "Session not found"
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "Current pane content:"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-
-    # Capture last 20 lines from current pane
-    tmux capture-pane -t "$session" -p -S -20 2>/dev/null || echo "(no content)"
 }
 
 # Restart session
@@ -103,6 +76,15 @@ restart_session() {
 
     if [ -z "$session" ]; then
         echo "No session specified"
+        return 1
+    fi
+
+    # Don't allow restarting special sessions (mirrors restart-confirm.sh)
+    if [ "$session" = "help" ] || [ "$session" = "manager" ]; then
+        echo ""
+        echo "⚠️  Cannot restart special session '$session'"
+        echo "Use F1-F10 to switch to a console first."
+        sleep 2
         return 1
     fi
 
@@ -221,9 +203,12 @@ show_mission_control() {
             r|R)
                 echo ""
                 echo "⚠  Restarting session '$session_name'..."
-                restart_session "$session_name"
-                echo ""
-                echo "✓ Session restarted. Press any key to continue..."
+                if restart_session "$session_name"; then
+                    echo ""
+                    echo "✓ Session restarted. Press any key to continue..."
+                else
+                    echo "Press any key to continue..."
+                fi
                 read -n 1
                 ;;
             ""|$'\n')
@@ -240,10 +225,6 @@ show_mission_control() {
         esac
     fi
 }
-
-# Export for fzf callbacks
-export -f build_session_list
-export -f restart_session
 
 # Run mission control
 show_mission_control

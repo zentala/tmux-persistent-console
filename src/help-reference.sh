@@ -37,8 +37,8 @@ cat << 'EOF'
   STATUS BAR
 
     Console tabs show:
-      Icon     Active session (has processes)
-      Icon     Empty/idle session
+      Icon     ● running command (not idle at the shell prompt)
+      Icon     ○ idle (foreground command is the login shell)
       Number   Console number (1-10)
       Name     Current window name
 
@@ -69,7 +69,8 @@ EOF
 # Keep window open (static display, no input)
 echo ""
 echo "  This is a read-only reference window."
-echo "  Switch to another console using Ctrl+F1-F10 or close this tab."
+echo "  Leave:  Ctrl+F1-F10 or click a console tab (this session keeps running)."
+echo "  Close:  from any console, run 'tmux kill-session -t help'."
 echo ""
 
 # Sleep forever (keep window visible)

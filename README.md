@@ -402,6 +402,9 @@ systemctl --user status tmux-console.service
 tmux ls   # console-1 .. console-10 (empty, freshly created)
 ```
 
+`systemctl --user stop tmux-console.service` only kills `console-1`..`console-10` —
+any other tmux session you created yourself is left running.
+
 ## Safe Exit Protection
 
 **Problem**: Typing `exit` in a tmux session kills the shell → destroys the session → you lose everything!
