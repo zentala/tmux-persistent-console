@@ -28,14 +28,17 @@ build_session_list() {
 
     local idx=1
     while IFS= read -r session; do
-        local status="○"  # inactive
+        local status="○"  # foreground command is the login shell (idle)
         local windows=$(tmux list-windows -t "$session" 2>/dev/null | wc -l)
         local current_window=$(tmux list-windows -t "$session" -F "#{window_active} #{window_name} #{pane_current_command}" 2>/dev/null | grep "^1" | cut -d' ' -f2-)
 
-        # Check if session has active processes
-        if tmux list-panes -t "$session" -F "#{pane_pid}" &>/dev/null; then
-            status="●"
-        fi
+        # ● when the active pane runs something other than a login shell
+        # (bash/zsh/sh/fish); ○ when it's idle at the shell prompt.
+        local active_cmd=$(tmux display-message -p -t "$session" '#{pane_current_command}' 2>/dev/null)
+        case "$active_cmd" in
+            bash|zsh|sh|fish|"") ;;
+            *) status="●" ;;
+        esac
 
         # Get F-key mapping
         local fkey=""

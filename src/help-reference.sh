@@ -37,8 +37,8 @@ cat << 'EOF'
   STATUS BAR
 
     Console tabs show:
-      Icon     Active session (has processes)
-      Icon     Empty/idle session
+      Icon     ● running command (not idle at the shell prompt)
+      Icon     ○ idle (foreground command is the login shell)
       Number   Console number (1-10)
       Name     Current window name
 
