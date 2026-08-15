@@ -2,25 +2,23 @@
 
 ---
 
-# Safe Exit - Ochrona przed przypadkowym zabiciem sesji tmux
+# Safe Exit - protection against accidentally killing a tmux session
 
 ## Problem
-Wpisanie `exit` w sesji tmux zabija shell → kończy sesję tmux → tracisz:
-- Całą historię komend z tej sesji
-- Działające procesy
-- Scrollback buffer
+Typing `exit` in a tmux session kills the shell → ends the tmux session → you lose:
+- The full command history from that session
+- Any running processes
+- The scrollback buffer
 
-## Rozwiązanie: Safe Exit Wrapper
+## Solution: Safe Exit Wrapper
 
-Wrapper chroni dwie ścieżki wyjścia z interaktywnej powłoki: wpisanie
-`exit` (przez alias) i wciśnięcie Ctrl+D / EOF (przez `IGNOREEOF`/
-`IGNORE_EOF`). Zobacz [Techniczne detale](#techniczne-detale) i
-[Uczciwe ograniczenia](#uczciwe-ograniczenia-co-nie-jest-chronione) niżej —
-oraz [`SAFE-EXIT-README-NOTES.md`](../../SAFE-EXIT-README-NOTES.md) dla
-treści do wpisania do głównego README.
+The wrapper guards two exit paths from an interactive shell: typing
+`exit` (via an alias) and pressing Ctrl+D / EOF (via `IGNOREEOF` /
+`IGNORE_EOF`). See [Technical details](#technical-details) and
+[Honest limits](#honest-limits-what-is-not-protected) below.
 
-### Jak działa
-Gdy wpiszesz `exit` w sesji tmux, otrzymasz interaktywne menu:
+### How it works
+When you type `exit` in a tmux session, you get an interactive menu:
 
 ```
 ⚠️  WARNING: You are in a tmux session!
@@ -38,145 +36,145 @@ Options:
 What do you want to do? [Enter/Y/ESC]:
 ```
 
-### Opcje działania
+### Options
 
-1. **Enter** (domyślne) - Bezpieczne odłączenie
-   - Sesja pozostaje aktywna
-   - Historia i procesy zachowane
-   - Możesz się później podłączyć: `tmux attach -t console-1`
+1. **Enter** (default) - Detach safely
+   - The session stays alive
+   - History and processes are preserved
+   - You can reattach later: `tmux attach -t console-1`
 
-2. **Y** (Shift+Y) - Zabij sesję permanentnie
-   - Tylko gdy naprawdę chcesz usunąć sesję
-   - Wymaga **Shift+Y** (wielka litera) - dodatkowe zabezpieczenie
-   - **UWAGA**: Tracisz historię i procesy!
+2. **Y** (Shift+Y) - Kill the session permanently
+   - Only when you really want to remove the session
+   - Requires **Shift+Y** (uppercase) - an extra safeguard
+   - **WARNING**: you lose history and processes!
 
-3. **ESC** - Anuluj, zostań w sesji
-   - Powrót do normalnej pracy
-   - Sesja pozostaje niezmieniona
+3. **ESC** - Cancel, stay in the session
+   - Returns to normal work
+   - The session is left unchanged
 
-### Instalacja
+### Installation
 
-#### Automatyczna (przy instalacji tmux-persistent-console)
-Safe exit jest automatycznie instalowany przez `install.sh`
+#### Automatic (during pTTY install)
+Safe exit is installed automatically by `install.sh`.
 
-#### Manualna instalacja
+#### Manual installation
 ```bash
-# Skopiuj plik
+# Copy the file
 cp ~/.vps/sessions/src/safe-exit.sh ~/.tmux-persistent-console/safe-exit.sh
 
-# Dodaj do ~/.bashrc
+# Add to ~/.bashrc
 echo "" >> ~/.bashrc
 echo "# Safe exit wrapper for tmux sessions" >> ~/.bashrc
 echo "[ -f ~/.tmux-persistent-console/safe-exit.sh ] && source ~/.tmux-persistent-console/safe-exit.sh" >> ~/.bashrc
 
-# Przeładuj bashrc
+# Reload bashrc
 source ~/.bashrc
 ```
 
 ### Test
 ```bash
-# Podłącz się do sesji
+# Attach to a session
 tmux attach -t console-1
 
-# Wpisz: exit
-# Zobaczysz menu wyboru
+# Type: exit
+# You will see the choice menu
 
-# Naciśnij Enter (bezpieczne odłączenie)
-# Lub ESC (zostań w sesji)
-# Lub Shift+Y (zabij sesję - uwaga!)
+# Press Enter (detach safely)
+# Or ESC (stay in the session)
+# Or Shift+Y (kill the session - careful!)
 ```
 
-### Uwagi bezpieczeństwa
-- **Domyślna akcja (Enter)**: Zawsze bezpieczna - tylko odłącza
-- **Wymaga Shift+Y**: Aby zabić sesję, musisz świadomie wcisnąć **wielką literę Y**
-- **ESC anuluje**: Naturalna opcja "wyjdź z menu" pozostawia w sesji
-- **Informuje o konsekwencjach**: Ostrzeżenie przed zabiciem sesji
-- **Nie działa poza tmux**: Jeśli nie jesteś w sesji tmux, `exit` działa normalnie
+### Safety notes
+- **Default action (Enter)**: always safe - only detaches
+- **Requires Shift+Y**: killing the session needs a deliberate **uppercase Y**
+- **ESC cancels**: the natural "leave the menu" option keeps you in the session
+- **Warns about consequences**: shows a warning before killing the session
+- **Inactive outside tmux**: if you are not in a tmux session, `exit` behaves normally
 
-### Alternatywy dla exit
-- **Ctrl+B, d** - Standardowy skrót tmux do detach
-- **Ctrl+F8** - Skrót funkcyjny do detach (jeśli skonfigurowany)
+### Alternatives to exit
+- **Ctrl+B, d** - Standard tmux detach shortcut
+- **Ctrl+F8** - Function-key detach shortcut (if configured)
 
-### Techniczne detale
-- Plik: `~/.tmux-persistent-console/safe-exit.sh`
-- Mechanizm (typed `exit`): Alias `exit` → funkcja `safe_exit()`
-- Mechanizm (Ctrl+D / EOF): `IGNOREEOF=2` (bash) / `setopt IGNORE_EOF` (zsh),
-  ustawiane tylko gdy `$TMUX` i `$PS1` są ustawione (interaktywna sesja w
-  tmux). Pierwsze Ctrl+D pokazuje komunikat powłoki
-  (`Use "exit" to leave the shell.`) zamiast zamykać shell; wpisany potem
-  `exit` trafia w alias i idzie przez `safe_exit()`.
-- Wykrywanie tmux: Sprawdza zmienną `$TMUX`
-- Działanie: `tmux detach-client` zamiast `builtin exit`
+### Technical details
+- File: `~/.tmux-persistent-console/safe-exit.sh`
+- Mechanism (typed `exit`): `exit` alias → `safe_exit()` function
+- Mechanism (Ctrl+D / EOF): `IGNOREEOF=2` (bash) / `setopt IGNORE_EOF` (zsh),
+  set only when `$TMUX` and `$PS1` are set (an interactive tmux session).
+  The first Ctrl+D shows the shell's own message
+  (`Use "exit" to leave the shell.`) instead of closing the shell; typing
+  `exit` afterward hits the alias and goes through `safe_exit()`.
+- tmux detection: checks the `$TMUX` variable
+- Action: `tmux detach-client` instead of `builtin exit`
 
-### Uczciwe ograniczenia (co NIE jest chronione)
-Ochrona działa tylko na dwóch konkretnych ścieżkach wyjścia z interaktywnej
-powłoki logowania. Nie jest to sandbox ani blokada na poziomie tmux — jest
-to omijalne z założenia:
+### Honest limits (what is NOT protected)
+The protection covers only two specific exit paths from an interactive
+login shell. It is not a sandbox or a tmux-level lock — it is
+bypassable by design:
 
-- **`\exit` lub `command exit` lub `builtin exit`** — pomija alias, wywołuje
-  prawdziwe wbudowane `exit`. Alias to konwencja shellowa, nie zabezpieczenie.
-- **Skrypty i subshelle** (`bash -c 'exit'`, `( exit )`, skrypt uruchomiony
-  jako plik) — alias obowiązuje tylko w powłoce interaktywnej, która go
-  zdefiniowała; nowy proces go nie dziedziczy.
-- **`tmux kill-session`** wywołane z zewnątrz (inny terminal, F11 menedżer,
-  zaplanowane zadanie) — to jest bezpośrednie polecenie tmux, nie przechodzi
-  przez shell w ogóle.
-- **`kill`/`kill -9` procesu powłoki lub tmux servera** — sygnał zabija
-  proces niezależnie od aliasów i trapów powłoki.
-- **Awaria/crash powłoki lub serwera tmux** — nic po stronie shella temu
-  nie zapobiega.
-- **Ctrl+D wciśnięte `IGNOREEOF+1` razy pod rząd** — `IGNOREEOF=2` wymaga
-  3 kolejnych EOF zanim powłoka faktycznie się zamknie (bez przechodzenia
-  przez `safe_exit()`); to celowy kompromis standardowego mechanizmu
-  powłoki, nie błąd.
+- **`\exit` or `command exit` or `builtin exit`** — skips the alias, calls
+  the real builtin `exit`. An alias is a shell convention, not a lock.
+- **Scripts and subshells** (`bash -c 'exit'`, `( exit )`, a script run
+  as a file) — the alias only applies in the interactive shell that
+  defined it; a new process does not inherit it.
+- **`tmux kill-session` called externally** (another terminal, the F11
+  manager menu, a scheduled task) — this is a direct tmux command and
+  never goes through the shell at all.
+- **`kill`/`kill -9` on the shell or tmux server process** — a signal
+  kills the process regardless of shell aliases and traps.
+- **A crash of the shell or the tmux server** — nothing on the shell
+  side prevents that.
+- **Ctrl+D pressed `IGNOREEOF+1` times in a row** — `IGNOREEOF=2`
+  requires 3 consecutive EOFs before the shell actually closes (without
+  going through `safe_exit()`); this is a deliberate trade-off of the
+  standard shell mechanism, not a bug.
 
-Innymi słowy: safe-exit chroni przed **przypadkowym** wpisaniem `exit` lub
-wciśnięciem Ctrl+D w interaktywnej sesji — nie przed celowym lub programowym
-zabiciem sesji z zewnątrz.
+In other words: safe-exit protects against **accidentally** typing
+`exit` or pressing Ctrl+D in an interactive session — not against a
+deliberate or programmatic kill of the session from outside.
 
-### Co się dzieje gdy:
-| Akcja | Rezultat |
+### What happens when:
+| Action | Result |
 |-------|----------|
-| `exit` + Enter | Bezpieczne odłączenie (sesja żyje) |
-| `exit` + ESC | Anulowanie, pozostajesz w sesji |
-| `exit` + Y (Shift+Y) | **ZABIJA SESJĘ** (strata historii!) |
-| `exit` + inna litera | Bezpieczne odłączenie (domyślna akcja) |
-| `exit` poza tmux | Normalne wyjście z shell |
+| `exit` + Enter | Detach safely (session stays alive) |
+| `exit` + ESC | Cancel, stay in the session |
+| `exit` + Y (Shift+Y) | **KILLS THE SESSION** (history lost!) |
+| `exit` + another key | Detach safely (default action) |
+| `exit` outside tmux | Normal shell exit |
 
-### Przykład użycia
+### Usage example
 ```bash
 $ ssh zentala@164.68.104.13 -t "tmux attach -t console-1"
 zentala@vps:~$ exit
 
 ⚠️  WARNING: You are in a tmux session!
 [...]
-What do you want to do? [Enter/d/y/n]: ← naciśnij Enter
+What do you want to do? [Enter/d/y/n]: ← press Enter
 
 👋 Detaching safely from session...
 Connection to 164.68.104.13 closed.
 
-# Później możesz wrócić:
+# Later you can come back:
 $ ssh zentala@164.68.104.13 -t "tmux attach -t console-1"
-zentala@vps:~$ # Historia zachowana!
+zentala@vps:~$ # History preserved!
 ```
 
-## Restart sesji (po zabiciu)
+## Restarting a session (after killing it)
 
-Jeśli przypadkowo zabiłeś sesję, możesz ją odtworzyć:
+If you accidentally killed a session, you can recreate it:
 
 ```bash
-# Na serwerze
-setup-console-sessions  # Odtworzy wszystkie 7 sesji
+# On the server
+setup-console-sessions  # Recreates all 7 sessions
 
-# Lub ręcznie
+# Or manually
 tmux new-session -d -s console-1 -n "main"
 ```
 
-## Podsumowanie
-✅ **Bezpieczne domyślne działanie** (Enter = detach)
-✅ **Wymaga potwierdzenia do zabicia sesji** (y = kill)
-✅ **Informuje o konsekwencjach**
-✅ **Nie przeszkadza poza tmux**
-✅ **Intuicyjne menu wyboru**
+## Summary
+✅ **Safe default action** (Enter = detach)
+✅ **Requires confirmation to kill a session** (y = kill)
+✅ **Warns about consequences**
+✅ **Does not get in the way outside tmux**
+✅ **Intuitive choice menu**
 
-**Nigdy więcej przypadkowego zabicia sesji!**
+**No more accidentally killed sessions.**

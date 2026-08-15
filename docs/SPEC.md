@@ -385,7 +385,7 @@
 
 **Problem:** F11 does detach instead of staying in manager session
 
-**User report:** "F11 ona się nie zamyka, ona znam rozłącza tmux jakby robił detach"
+**User report** (original user feedback, Polish): "F11 ona się nie zamyka, ona znam rozłącza tmux jakby robił detach"
 
 **Root cause investigation needed:**
 - Check `src/manager-menu.sh` script
@@ -403,7 +403,7 @@
 
 ### 5. Status Bar & Manager Menu Vision ⏳ IN PROGRESS
 
-**User requirement:** "Najpierw zróbmy spec na wszystko i dokładną wizję a później będziemy dzielili na etapy. Nie chcę robić etapami tylko chcę mieć skończoną wizję na całość i ją skończyć."
+**User requirement** (original user feedback, Polish): "Najpierw zróbmy spec na wszystko i dokładną wizję a później będziemy dzielili na etapy. Nie chcę robić etapami tylko chcę mieć skończoną wizję na całość i ją skończyć."
 
 **Action required:**
 1. Create complete Manager Menu (F11) specification
