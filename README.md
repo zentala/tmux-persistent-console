@@ -40,6 +40,28 @@ pTTY keeps the **process alive on the server** while you reconnect. tmux runs as
 
 If you need crash-survivable AI sessions, that's a different product (state replication + cloud sync). pTTY is laser-focused on the 95% case: client-side disconnections.
 
+## How it works
+
+```
+┌───────────┐        ssh         ┌──────────────────────────┐
+│  laptop   │ ─────────────────▶ │  server                  │
+│ (client)  │ ◀───────────────── │  tmux: console-1..10     │
+└───────────┘   attach/detach    └──────────────────────────┘
+```
+
+- You install pTTY **once, on the server**. It runs there: a tmux server
+  plus a systemd user service that keeps it up.
+- The client — your laptop or phone — installs nothing. It only opens an
+  SSH connection and attaches to a tmux session.
+- Disconnecting (WiFi drop, closing the terminal, an explicit detach)
+  does not stop anything. tmux keeps the session running on the server.
+- Reconnecting is an attach: you land back in the same session, same
+  scrollback, same running processes.
+
+Set up the alias that makes this a one-command habit: see
+[Set up a short SSH alias](#2-set-up-a-short-ssh-alias-recommended--this-is-the-real-devex-win)
+in Quick Start.
+
 ## Features
 
 ### Instant Session Switching
