@@ -5,7 +5,7 @@ After=default.target
 [Service]
 Type=forking
 ExecStart=/bin/bash %h/.tmux-persistent-console/setup.sh
-ExecStop=/bin/bash -c 'for i in $(seq 1 10); do /usr/bin/tmux kill-session -t console-$i 2>/dev/null; done; true'
+ExecStop=/bin/bash -c 'for i in $(seq 1 10); do /usr/bin/tmux kill-session -t =console-$i 2>/dev/null; done; true'
 RemainAfterExit=yes
 
 [Install]
