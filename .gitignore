@@ -14,3 +14,10 @@
 
 # === Private planning repo (nested git, never published) ===
 .plan/
+
+# === Terraform (tests/terraform) ===
+*.tfvars
+!*.tfvars.example
+*.tfstate
+*.tfstate.*
+.terraform/

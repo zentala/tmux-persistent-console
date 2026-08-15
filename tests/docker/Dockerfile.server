@@ -1,6 +1,14 @@
 # Dockerfile for pTTY test server
 FROM ubuntu:24.04
 
+# =============================================================================
+# WARNING: this image bakes in fixed test passwords, PermitRootLogin yes, and
+# passwordless sudo (NOPASSWD:ALL). That is acceptable ONLY for isolated
+# local/CI testing, never elsewhere. Do not publish this image and never
+# expose port 22 beyond loopback (see tests/docker/docker-compose.yml, which
+# binds the SSH port to 127.0.0.1 only).
+# =============================================================================
+
 # Set environment
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
