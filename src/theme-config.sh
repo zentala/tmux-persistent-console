@@ -88,9 +88,11 @@ get_icon() {
     local nf_mode="${PTTY_NF_MODE:-true}"  # Default: NF enabled
 
     if [[ "$nf_mode" == "true" ]]; then
-        eval echo "\$ICON_${icon_name}"
+        local varname="ICON_${icon_name}"
+        printf '%s\n' "${!varname}"
     else
-        eval echo "\$ICON_${icon_name}_FALLBACK"
+        local varname="ICON_${icon_name}_FALLBACK"
+        printf '%s\n' "${!varname}"
     fi
 }
 
@@ -98,7 +100,8 @@ get_icon() {
 # Usage: get_color "SESSION_ACTIVE"
 get_color() {
     local color_name="$1"
-    eval echo "\$COLOR_${color_name}"
+    local varname="COLOR_${color_name}"
+    printf '%s\n' "${!varname}"
 }
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
