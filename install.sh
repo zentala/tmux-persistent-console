@@ -302,6 +302,10 @@ if [ -d "$REPO_ROOT/src" ]; then
             mkdir -p "$INSTALL_DIR/tui"
             cp -r "$REPO_ROOT/src/tui/"* "$INSTALL_DIR/tui/"
         fi
+        if [ -d "$REPO_ROOT/src/lib" ]; then
+            mkdir -p "$INSTALL_DIR/lib"
+            cp -r "$REPO_ROOT/src/lib/"* "$INSTALL_DIR/lib/"
+        fi
         if [ -f "$REPO_ROOT/scripts/doctor.sh" ]; then
             cp "$REPO_ROOT/scripts/doctor.sh" "$INSTALL_DIR/doctor.sh"
         fi
@@ -326,6 +330,14 @@ else
     for f in tui-core.sh tui-menu.sh tui-dialogs.sh tui-list.sh tui-status.sh; do
         if ! curl -fsSL "$REPO_URL_BASE/src/tui/$f" -o "$INSTALL_DIR/tui/$f"; then
             echo -e "${RED}❌ Failed to download tui/$f${NC}"
+            exit 1
+        fi
+    done
+
+    mkdir -p "$INSTALL_DIR/lib"
+    for f in session-list.sh; do
+        if ! curl -fsSL "$REPO_URL_BASE/src/lib/$f" -o "$INSTALL_DIR/lib/$f"; then
+            echo -e "${RED}❌ Failed to download lib/$f${NC}"
             exit 1
         fi
     done

@@ -17,58 +17,11 @@ NC='\033[0m'
 # Get current session for highlighting
 CURRENT_SESSION="${TMUX_SESSION:-$(tmux display-message -p '#S' 2>/dev/null)}"
 
-# Build session list with status and details
-build_session_list() {
-    local sessions=$(tmux list-sessions -F "#{session_name}" 2>/dev/null)
-
-    if [ -z "$sessions" ]; then
-        echo "No sessions found"
-        return 1
-    fi
-
-    while IFS= read -r session; do
-        local status="○"  # foreground command is the login shell (idle)
-        local windows=$(tmux list-windows -t "$session" 2>/dev/null | wc -l)
-        local current_window=$(tmux list-windows -t "$session" -F "#{window_active} #{window_name} #{pane_current_command}" 2>/dev/null | grep "^1" | cut -d' ' -f2-)
-
-        # ● when the active pane runs something other than a login shell
-        # (bash/zsh/sh/fish); ○ when it's idle at the shell prompt.
-        local active_cmd=$(tmux display-message -p -t "$session" '#{pane_current_command}' 2>/dev/null)
-        case "$active_cmd" in
-            bash|zsh|sh|fish|"") ;;
-            *) status="●" ;;
-        esac
-
-        # Get F-key mapping
-        local fkey=""
-        case "$session" in
-            console-1) fkey="[F1]" ;;
-            console-2) fkey="[F2]" ;;
-            console-3) fkey="[F3]" ;;
-            console-4) fkey="[F4]" ;;
-            console-5) fkey="[F5]" ;;
-            console-6) fkey="[F6]" ;;
-            console-7) fkey="[F7]" ;;
-            console-8) fkey="[F8]" ;;
-            console-9) fkey="[F9]" ;;
-            console-10) fkey="[F10]" ;;
-            *) fkey="    " ;;
-        esac
-
-        # Format window info
-        local window_info="$current_window"
-        [ -z "$window_info" ] && window_info="(empty)"
-
-        # Mark current session. The marker must never be whitespace: the
-        # session name is parsed back out of this line as awk field 3, and a
-        # leading space would shift every field left by one.
-        local marker="·"
-        [ "$session" = "$CURRENT_SESSION" ] && marker="→"
-
-        # Output format: "marker status session fkey | window_info"
-        printf "%s %s %-15s %s │ %s\n" "$marker" "$status" "$session" "$fkey" "$window_info"
-    done <<< "$sessions"
-}
+# build_session_list() and parse_session_from_line() live in session-list.sh
+# so they can be unit-tested without a running tmux server.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/session-list.sh
+source "$SCRIPT_DIR/lib/session-list.sh"
 
 # Restart session
 restart_session() {
@@ -180,7 +133,7 @@ show_mission_control() {
         --reverse)
 
     # Extract session name from selection
-    local session_name=$(echo "$selected" | awk '{print $3}')
+    local session_name=$(parse_session_from_line "$selected")
 
     if [ -n "$session_name" ]; then
         # Ask what to do with selected session
