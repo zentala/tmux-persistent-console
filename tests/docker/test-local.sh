@@ -123,15 +123,55 @@ case "$ACTION" in
             echo -e "${RED}❌ FAILED${NC}"
         fi
 
-        # Test tmux sessions
+        # Test tmux sessions. Count via grep on session names, not
+        # `tmux ls | wc -l` — the latter also counts non-console sessions
+        # (e.g. `help`) and gives a false failure/pass.
         echo -n "Test: Tmux sessions exist... "
-        SESSION_COUNT=$(sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux ls 2>/dev/null | wc -l")
+        SESSION_COUNT=$(sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux list-sessions -F '#{session_name}' 2>/dev/null | grep -c '^console-'")
         if [ "$SESSION_COUNT" -eq 10 ]; then
             echo -e "${GREEN}✅ PASSED (10 sessions)${NC}"
         else
             echo -e "${RED}❌ FAILED (found $SESSION_COUNT sessions)${NC}"
             exit 1
         fi
+
+        # Keybinding smoke test. `switch-client` needs an attached client,
+        # which docker exec/ssh do not provide, so we assert the thing the
+        # F-key bindings actually depend on: every target session exists.
+        echo -n "Test: Console keybinding targets exist (console-1..10)... "
+        BINDING_OK=true
+        for i in $(seq 1 10); do
+            if ! sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux has-session -t console-$i" > /dev/null 2>&1; then
+                BINDING_OK=false
+            fi
+        done
+        if [ "$BINDING_OK" = "true" ]; then
+            echo -e "${GREEN}✅ PASSED${NC}"
+        else
+            echo -e "${RED}❌ FAILED (a console-N session is missing)${NC}"
+            exit 1
+        fi
+
+        # ExecStop-scoping test (T06). The server container has no systemd
+        # (Ubuntu base image, sshd as PID 1's child via /docker-entrypoint.sh),
+        # so we exercise the same command line as
+        # src/tmux-console.service's ExecStop directly instead of going
+        # through systemctl. Asserts it kills only console-1..10 and leaves
+        # unrelated sessions (here: `mywork`) alone.
+        echo -n "Test: ExecStop scoping leaves other sessions alone... "
+        sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux new-session -d -s mywork" > /dev/null 2>&1
+        sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost \
+            "bash -c 'for i in \$(seq 1 10); do tmux kill-session -t =console-\$i 2>/dev/null; done; true'" > /dev/null 2>&1
+        MYWORK_ALIVE=$(sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux has-session -t mywork" > /dev/null 2>&1 && echo yes || echo no)
+        CONSOLES_LEFT=$(sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux list-sessions -F '#{session_name}' 2>/dev/null | grep -c '^console-'" || true)
+        if [ "$MYWORK_ALIVE" = "yes" ] && [ "$CONSOLES_LEFT" -eq 0 ]; then
+            echo -e "${GREEN}✅ PASSED${NC}"
+        else
+            echo -e "${RED}❌ FAILED (mywork=$MYWORK_ALIVE, consoles left=$CONSOLES_LEFT)${NC}"
+            exit 1
+        fi
+        # Recreate consoles so any later test steps see the normal 10-session layout.
+        sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux kill-session -t mywork; bash ~/.tmux-persistent-console/setup.sh" > /dev/null 2>&1
 
         echo ""
         echo -e "${GREEN}📊 Test Summary Complete${NC}"
