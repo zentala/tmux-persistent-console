@@ -1,6 +1,6 @@
 #!/bin/bash
 # Restart tmux session - kill and recreate
-# Used by Ctrl+R and F11 Manager Menu
+# Used by Ctrl+B R and F11 Manager Menu
 
 SESSION_NAME="$1"
 

@@ -23,9 +23,9 @@ cat << 'EOF'
 
     Management:
       Ctrl+F11       Console Manager (interactive menu)
-      Ctrl+R         Restart current console (with confirmation)
+      Ctrl+B R       Restart current console (with confirmation)
       Ctrl+D         Disconnect safely (detach)
-      Ctrl+?         Show keyboard shortcuts popup
+      Ctrl+B H       Show keyboard shortcuts popup
 
 
   MOUSE SUPPORT

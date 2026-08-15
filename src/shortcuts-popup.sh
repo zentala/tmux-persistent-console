@@ -1,5 +1,5 @@
 #!/bin/bash
-# Ctrl+? - Quick keyboard shortcuts popup overlay
+# Ctrl+B H - Quick keyboard shortcuts popup overlay
 # Non-intrusive, gum-styled popup
 
 # Check if gum is available
@@ -12,10 +12,10 @@ if ! command -v gum &>/dev/null; then
 
   F1-F10      Jump to console
   Ctrl+←→     Prev/Next
-  Ctrl+R      Restart (confirm)
+  Ctrl+B R    Restart (confirm)
   F11         Manager Menu
   F12         Full Help
-  Ctrl+?      This popup
+  Ctrl+B H    This popup
 
   Press any key to close
 
@@ -35,10 +35,10 @@ gum style \
 
   F1-F10      Jump to console
   Ctrl+←→     Prev/Next console
-  Ctrl+R      Restart current (confirm)
+  Ctrl+B R    Restart current (confirm)
   F11         Manager Menu
   F12         Full Help Reference
-  Ctrl+?      This popup
+  Ctrl+B H    This popup
 
   Press any key to close"
 
