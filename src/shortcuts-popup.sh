@@ -10,12 +10,12 @@ if ! command -v gum &>/dev/null; then
 
   ⌨️  KEYBOARD SHORTCUTS
 
-  F1-F10      Jump to console
-  Ctrl+←→     Prev/Next
-  Ctrl+B R    Restart (confirm)
-  F11         Manager Menu
-  F12         Full Help
-  Ctrl+B H    This popup
+  Ctrl+F1-F10   Jump to console
+  Ctrl+←→       Prev/Next
+  Ctrl+B R      Restart (confirm)
+  Ctrl+F11      Manager Menu
+  Ctrl+F12      Full Help
+  Ctrl+B H      This popup
 
   Press any key to close
 
@@ -33,12 +33,12 @@ gum style \
     --align left \
     "  ⌨️  KEYBOARD SHORTCUTS
 
-  F1-F10      Jump to console
-  Ctrl+←→     Prev/Next console
-  Ctrl+B R    Restart current (confirm)
-  F11         Manager Menu
-  F12         Full Help Reference
-  Ctrl+B H    This popup
+  Ctrl+F1-F10   Jump to console
+  Ctrl+←→       Prev/Next console
+  Ctrl+B R      Restart current (confirm)
+  Ctrl+F11      Manager Menu
+  Ctrl+F12      Full Help Reference
+  Ctrl+B H      This popup
 
   Press any key to close"
 

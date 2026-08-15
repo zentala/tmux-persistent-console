@@ -9,7 +9,7 @@
 # Connect directly to specific console
 ssh user@server -t "tmux attach -t console-1"
 ssh user@server -t "tmux attach -t console-2"
-# ... through console-7
+# ... through console-10
 ```
 
 ### Interactive Menu Access
@@ -170,7 +170,7 @@ Host server-console-2
     RequestTTY force
     RemoteCommand tmux attach -t console-2
 
-# Continue for console-3 through console-7
+# Continue for console-3 through console-10
 ```
 
 ### Usage with SSH Config

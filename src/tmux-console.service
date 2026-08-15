@@ -1,5 +1,5 @@
 [Unit]
-Description=Tmux persistent console sessions (creates console-1..5 on boot)
+Description=Tmux persistent console sessions (creates console-1..10 on boot)
 After=default.target
 
 [Service]

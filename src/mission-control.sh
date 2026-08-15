@@ -57,8 +57,10 @@ build_session_list() {
         local window_info="$current_window"
         [ -z "$window_info" ] && window_info="(empty)"
 
-        # Mark current session
-        local marker=" "
+        # Mark current session. The marker must never be whitespace: the
+        # session name is parsed back out of this line as awk field 3, and a
+        # leading space would shift every field left by one.
+        local marker="·"
         [ "$session" = "$CURRENT_SESSION" ] && marker="→"
 
         # Output format: "marker status session fkey | window_info"
