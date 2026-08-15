@@ -12,6 +12,13 @@ Wpisanie `exit` w sesji tmux zabija shell → kończy sesję tmux → tracisz:
 
 ## Rozwiązanie: Safe Exit Wrapper
 
+Wrapper chroni dwie ścieżki wyjścia z interaktywnej powłoki: wpisanie
+`exit` (przez alias) i wciśnięcie Ctrl+D / EOF (przez `IGNOREEOF`/
+`IGNORE_EOF`). Zobacz [Techniczne detale](#techniczne-detale) i
+[Uczciwe ograniczenia](#uczciwe-ograniczenia-co-nie-jest-chronione) niżej —
+oraz [`SAFE-EXIT-README-NOTES.md`](../../SAFE-EXIT-README-NOTES.md) dla
+treści do wpisania do głównego README.
+
 ### Jak działa
 Gdy wpiszesz `exit` w sesji tmux, otrzymasz interaktywne menu:
 
@@ -92,9 +99,40 @@ tmux attach -t console-1
 
 ### Techniczne detale
 - Plik: `~/.tmux-persistent-console/safe-exit.sh`
-- Mechanizm: Alias `exit` → funkcja `safe_exit()`
+- Mechanizm (typed `exit`): Alias `exit` → funkcja `safe_exit()`
+- Mechanizm (Ctrl+D / EOF): `IGNOREEOF=2` (bash) / `setopt IGNORE_EOF` (zsh),
+  ustawiane tylko gdy `$TMUX` i `$PS1` są ustawione (interaktywna sesja w
+  tmux). Pierwsze Ctrl+D pokazuje komunikat powłoki
+  (`Use "exit" to leave the shell.`) zamiast zamykać shell; wpisany potem
+  `exit` trafia w alias i idzie przez `safe_exit()`.
 - Wykrywanie tmux: Sprawdza zmienną `$TMUX`
 - Działanie: `tmux detach-client` zamiast `builtin exit`
+
+### Uczciwe ograniczenia (co NIE jest chronione)
+Ochrona działa tylko na dwóch konkretnych ścieżkach wyjścia z interaktywnej
+powłoki logowania. Nie jest to sandbox ani blokada na poziomie tmux — jest
+to omijalne z założenia:
+
+- **`\exit` lub `command exit` lub `builtin exit`** — pomija alias, wywołuje
+  prawdziwe wbudowane `exit`. Alias to konwencja shellowa, nie zabezpieczenie.
+- **Skrypty i subshelle** (`bash -c 'exit'`, `( exit )`, skrypt uruchomiony
+  jako plik) — alias obowiązuje tylko w powłoce interaktywnej, która go
+  zdefiniowała; nowy proces go nie dziedziczy.
+- **`tmux kill-session`** wywołane z zewnątrz (inny terminal, F11 menedżer,
+  zaplanowane zadanie) — to jest bezpośrednie polecenie tmux, nie przechodzi
+  przez shell w ogóle.
+- **`kill`/`kill -9` procesu powłoki lub tmux servera** — sygnał zabija
+  proces niezależnie od aliasów i trapów powłoki.
+- **Awaria/crash powłoki lub serwera tmux** — nic po stronie shella temu
+  nie zapobiega.
+- **Ctrl+D wciśnięte `IGNOREEOF+1` razy pod rząd** — `IGNOREEOF=2` wymaga
+  3 kolejnych EOF zanim powłoka faktycznie się zamknie (bez przechodzenia
+  przez `safe_exit()`); to celowy kompromis standardowego mechanizmu
+  powłoki, nie błąd.
+
+Innymi słowy: safe-exit chroni przed **przypadkowym** wpisaniem `exit` lub
+wciśnięciem Ctrl+D w interaktywnej sesji — nie przed celowym lub programowym
+zabiciem sesji z zewnątrz.
 
 ### Co się dzieje gdy:
 | Akcja | Rezultat |
