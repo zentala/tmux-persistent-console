@@ -6,6 +6,29 @@ echo "          pTTY REMOVAL             "
 echo "==================================="
 echo ""
 
+# Stop + remove systemd autostart so sessions don't get re-created on next boot
+if command -v systemctl &> /dev/null; then
+    if [ -f "$HOME/.config/systemd/user/tmux-console.service" ]; then
+        echo "🛑 Disabling systemd autostart..."
+        systemctl --user disable --now tmux-console.service 2>/dev/null || true
+        rm -f "$HOME/.config/systemd/user/tmux-console.service"
+        systemctl --user daemon-reload 2>/dev/null || true
+        echo "   ✓ Removed tmux-console.service"
+    fi
+
+    # Drop linger only if no other user services rely on it.
+    if loginctl show-user "$USER" 2>/dev/null | grep -q "Linger=yes"; then
+        other_user_units=$(systemctl --user list-unit-files --state=enabled --no-legend 2>/dev/null | wc -l)
+        if [ "$other_user_units" -eq 0 ]; then
+            echo "🧹 Disabling user lingering (no other user services need it)..."
+            loginctl disable-linger "$USER" 2>/dev/null || sudo loginctl disable-linger "$USER" 2>/dev/null || \
+                echo "   ⚠ Could not disable lingering — run manually: sudo loginctl disable-linger $USER"
+        else
+            echo "ℹ️  Keeping linger=yes ($other_user_units other user services still enabled)"
+        fi
+    fi
+fi
+
 # Kill all console sessions
 echo "🔄 Stopping console sessions..."
 for i in {1..10}; do
