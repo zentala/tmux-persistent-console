@@ -183,8 +183,8 @@ Press F1-F10 to switch between consoles...
 
 ## 🔗 Related Documentation
 
-- **[SPEC.md](../02-planning/SPEC.md)** - Complete product specification
-- **[GLOSSARY.md](../02-planning/specs/GLOSSARY.md)** - Terminology reference
+- **[SPEC.md](SPEC.md)** - Complete product specification
+- **[GLOSSARY.md](specs/GLOSSARY.md)** - Terminology reference
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical implementation
 
 ---

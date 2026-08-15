@@ -35,9 +35,9 @@ scrollback, running processes, and AI conversation state are gone.
 
 ## Source of Truth
 
-- Product/spec: `02-planning/SPEC.md`
-- Architecture: `03-architecture/ARCHITECTURE.md`
-- Naming: `03-architecture/NAMING.md`
+- Product/spec: `docs/SPEC.md`
+- Architecture: `docs/ARCHITECTURE.md`
+- Naming: `docs/NAMING.md`
 - Icons: `docs/ICONS-NETWORK-SET.md`
 - Release review: `.plan/REVIEW.md`
 - Epic execution: `.plan/epic-v0.2-ptty/ORCHESTRATOR.md`
