@@ -173,6 +173,23 @@ case "$ACTION" in
         # Recreate consoles so any later test steps see the normal 10-session layout.
         sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux kill-session -t mywork; bash ~/.tmux-persistent-console/setup.sh" > /dev/null 2>&1
 
+        # Upgrade path (T12): simulate the old "5 consoles" layout, re-run
+        # setup.sh (idempotent: skips existing sessions, creates the rest),
+        # assert all 10 exist afterward. This is a setup.sh-level check
+        # only — the container has no systemd, so re-registering/restarting
+        # the systemd unit on upgrade is NOT covered here.
+        echo -n "Test: Upgrade from 5 to 10 consoles... "
+        sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost \
+            "bash -c 'for i in \$(seq 1 10); do tmux kill-session -t =console-\$i 2>/dev/null; done; for i in \$(seq 1 5); do tmux new-session -d -s console-\$i; done'" > /dev/null 2>&1
+        sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "bash ~/.tmux-persistent-console/setup.sh" > /dev/null 2>&1
+        UPGRADED_COUNT=$(sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux list-sessions -F '#{session_name}' 2>/dev/null | grep -c '^console-'")
+        if [ "$UPGRADED_COUNT" -eq 10 ]; then
+            echo -e "${GREEN}✅ PASSED (10 sessions after upgrade)${NC}"
+        else
+            echo -e "${RED}❌ FAILED (found $UPGRADED_COUNT sessions after upgrade)${NC}"
+            exit 1
+        fi
+
         echo ""
         echo -e "${GREEN}📊 Test Summary Complete${NC}"
         ;;

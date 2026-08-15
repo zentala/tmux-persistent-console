@@ -157,6 +157,22 @@ jobs:
             FAILED=true
           fi
 
+          # Upgrade path (T12): simulate the old "5 consoles" layout, re-run
+          # setup.sh (idempotent), assert all 10 exist. setup.sh-level only —
+          # this container has no systemd, so the unit re-registration path
+          # on a real host upgrade is NOT covered here.
+          echo -n "Test: Upgrade from 5 to 10 consoles... "
+          sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost \
+            "bash -c 'for i in \$(seq 1 10); do tmux kill-session -t =console-\$i 2>/dev/null; done; for i in \$(seq 1 5); do tmux new-session -d -s console-\$i; done'" > /dev/null 2>&1
+          sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "bash ~/.tmux-persistent-console/setup.sh" > /dev/null 2>&1
+          UPGRADED_COUNT=$(sshpass -p testpassword ssh -p 2222 -o StrictHostKeyChecking=no testuser@localhost "tmux list-sessions -F '#{session_name}' 2>/dev/null | grep -c '^console-'")
+          if [ "$UPGRADED_COUNT" -eq 10 ]; then
+            echo "✅ PASSED (10 sessions after upgrade)" | tee -a "$RESULTS_FILE"
+          else
+            echo "❌ FAILED (found $UPGRADED_COUNT sessions after upgrade)" | tee -a "$RESULTS_FILE"
+            FAILED=true
+          fi
+
           # Save results for summary
           echo "RESULTS_FILE=$RESULTS_FILE" >> $GITHUB_OUTPUT
           if [ "$FAILED" = "true" ]; then
