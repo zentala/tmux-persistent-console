@@ -64,6 +64,19 @@ variable "instance_name" {
   default     = "tmux-console-test"
 }
 
+# CIDR allowed to reach SSH (and the optional web-test ports). No default: the
+# deploy fails closed until you scope it to your own address (e.g. "203.0.113.7/32").
+# Do NOT set this to 0.0.0.0/0 — that exposes a NOPASSWD-sudo box to the internet.
+variable "allowed_ssh_cidr" {
+  description = "CIDR block permitted to reach SSH/web ports (use your own /32)"
+  type        = string
+
+  validation {
+    condition     = var.allowed_ssh_cidr != "0.0.0.0/0"
+    error_message = "Refusing to open ingress to the whole internet. Scope allowed_ssh_cidr to your own address, e.g. 203.0.113.7/32."
+  }
+}
+
 # Data sources
 data "oci_identity_availability_domains" "ads" {
   compartment_id = var.compartment_ocid
@@ -107,7 +120,7 @@ resource "oci_core_network_security_group_security_rule" "ssh_ingress" {
   direction                 = "INGRESS"
   protocol                  = "6" # TCP
 
-  source      = "0.0.0.0/0"
+  source      = var.allowed_ssh_cidr
   source_type = "CIDR_BLOCK"
 
   tcp_options {
@@ -124,7 +137,7 @@ resource "oci_core_network_security_group_security_rule" "http_ingress" {
   direction                 = "INGRESS"
   protocol                  = "6" # TCP
 
-  source      = "0.0.0.0/0"
+  source      = var.allowed_ssh_cidr
   source_type = "CIDR_BLOCK"
 
   tcp_options {

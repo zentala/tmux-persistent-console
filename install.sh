@@ -226,11 +226,19 @@ GUM_TARBALL="gum_${GUM_VERSION}_Linux_x86_64.tar.gz"
 GUM_SHA256="bf93c39d706fbb48883d983b3a71cd8b1617599a70204953573b66ed0c133630"
 
 download_gum_tarball() {
-    local dest="/tmp/gum.tar.gz"
-    rm -f "$dest"
+    # Stage in a private, unpredictable directory (0700) instead of fixed /tmp
+    # paths. This keeps the sha256-verified artifact and the extracted binary
+    # out of reach of other local users: on a shared host, predictable /tmp
+    # names let an attacker win a race between extraction and the privileged
+    # `sudo mv`, substituting their own binary into /usr/local/bin (CWE-377).
+    local staging
+    staging="$(mktemp -d)" || return 1
+    # shellcheck disable=SC2064
+    trap "rm -rf '$staging'" RETURN
+
+    local dest="$staging/gum.tar.gz"
     if ! wget -q "https://github.com/charmbracelet/gum/releases/download/v${GUM_VERSION}/${GUM_TARBALL}" -O "$dest"; then
         echo -e "${RED}  ❌ Failed to download $GUM_TARBALL${NC}"
-        rm -f "$dest"
         return 1
     fi
     local actual_sha256
@@ -239,12 +247,10 @@ download_gum_tarball() {
         echo -e "${RED}  ❌ sha256 mismatch for $GUM_TARBALL${NC}"
         echo -e "${RED}     expected: $GUM_SHA256${NC}"
         echo -e "${RED}     actual:   $actual_sha256${NC}"
-        rm -f "$dest"
         return 1
     fi
-    tar -xzf "$dest" -C /tmp
-    sudo mv /tmp/gum /usr/local/bin/
-    rm -f "$dest"
+    tar -xzf "$dest" -C "$staging"
+    sudo mv "$staging/gum" /usr/local/bin/
 }
 
 if ! command -v gum &> /dev/null; then
