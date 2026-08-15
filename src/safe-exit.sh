@@ -209,8 +209,17 @@ RESTART_SCRIPT
 # Override the exit command
 alias exit='safe_exit'
 
-# Inform user about Ctrl+D alternative
-if [ -n "$TMUX" ]; then
-    # Trap Ctrl+D to also use safe exit
-    trap 'safe_exit' SIGINT
+# Protect against Ctrl+D (EOF), which would otherwise terminate the shell
+# directly and skip safe_exit entirely. IGNOREEOF makes the shell require
+# the EOF key N times in a row before it exits; each attempt below that
+# prints the shell's own "Use \"exit\" to leave the shell" warning, at
+# which point the aliased `exit` above takes over.
+# Scoped to interactive tmux sessions only ($TMUX + $PS1) so plain,
+# non-tmux shells keep default Ctrl+D behavior.
+if [ -n "$TMUX" ] && [ -n "$PS1" ]; then
+    if [ -n "$ZSH_VERSION" ]; then
+        setopt IGNORE_EOF
+    elif [ -n "$BASH_VERSION" ]; then
+        export IGNOREEOF=2
+    fi
 fi
