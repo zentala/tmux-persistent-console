@@ -4,7 +4,7 @@
 
 set -e
 
-PTPC_VERSION="0.1.3"
+PTTY_VERSION="0.2.0"
 MIN_TMUX_VERSION="3.2"
 
 # Colors for output
@@ -21,7 +21,7 @@ for arg in "$@"; do
     case "$arg" in
         --dry-run|-n) DRY_RUN=1 ;;
         --no-systemd) NO_SYSTEMD=1 ;;
-        --version|-V) echo "pTTY v$PTPC_VERSION"; exit 0 ;;
+        --version|-V) echo "pTTY v$PTTY_VERSION"; exit 0 ;;
         --help|-h)
             cat <<EOF
 Usage: install.sh [--dry-run] [--no-systemd] [--version] [--help]
@@ -44,7 +44,7 @@ INSTALL_DIR="$HOME/.tmux-persistent-console"
 BIN_DIR="$HOME/bin"
 
 echo -e "${BLUE}==================================="
-echo -e "  pTTY INSTALLER v$PTPC_VERSION"
+echo -e "  pTTY INSTALLER v$PTTY_VERSION"
 echo -e "===================================${NC}"
 echo ""
 
@@ -252,8 +252,8 @@ else
     echo -e "${YELLOW}⬇️  Downloading files from ${REPO_URL_BASE}${NC}"
     for f in \
         setup.sh connect.sh tmux.conf tmux-console.service uninstall.sh \
-        safe-exit.sh console-help.sh help-console.sh help-reference.sh \
-        status-format-v4.tmux status-format-v3.tmux status-bar-legacy.sh \
+        safe-exit.sh console-help.sh help-reference.sh \
+        status-format-v4.tmux \
         theme-config.sh mission-control.sh shortcuts-popup.sh \
         click-session.sh restart-confirm.sh restart-session.sh; do
         if ! curl -fsSL "$REPO_URL_BASE/src/$f" -o "$INSTALL_DIR/$f"; then
