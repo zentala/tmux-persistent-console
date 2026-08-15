@@ -45,13 +45,12 @@
 ### Project Identity
 - **Display name:** pTTY
 - **Full name:** PersistentTTY
-- **CLI binary:** `ptty`
-- **Daemon:** `pttyd` (future)
-- **Config file:** `~/.ptty.conf`
+- **CLI binary:** `ptty` (future vision — not implemented in v0.2)
+- **Daemon:** `pttyd` (future vision — not implemented in v0.2)
+- **Config file:** `~/.ptty.conf` (future vision — not implemented in v0.2)
 
 ### Repository & Web
-- **GitHub:** `github.com/zentala/tmux-persistent-console` (current)
-- **Future repo:** `github.com/zentala/ptty`
+- **GitHub:** `github.com/zentala/pTTY`
 - **Website ideas:** `ptty.dev`, `persistenttty.io`
 
 ### In Code
@@ -132,7 +131,7 @@ These keyword groups informed the naming decision:
 
 ## 💬 Usage Examples
 
-### CLI Commands (v2+ Future)
+### CLI Commands — Future vision, not implemented in v0.2
 ```bash
 ptty up         # Start persistent shell daemon
 ptty attach     # Attach to your personal TTY
@@ -143,7 +142,7 @@ ptty status     # Show all console states
 ptty gui        # Toggle status bar
 ```
 
-### Configuration
+### Configuration — Future vision, not implemented in v0.2
 ```bash
 # Config file
 ~/.ptty.conf
@@ -161,7 +160,7 @@ PTTY_ICON_ACTIVE=""
 pTTY (PersistentTTY) provides persistent tmux sessions...
 
 ## Install
-git clone https://github.com/zentala/ptty
+git clone https://github.com/zentala/pTTY
 
 ## Usage
 Press F1-F10 to switch between consoles...
