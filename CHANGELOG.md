@@ -4,7 +4,7 @@ All notable changes to **pTTY** are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning is [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [0.2.1] — 2026-08-17
 
 ### Fixed
 - The public install one-liner failed with a 404 for every new user: the

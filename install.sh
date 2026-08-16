@@ -6,7 +6,7 @@ set -e
 umask 022
 trap 'echo "[pTTY] Install failed at line $LINENO — nothing may be partially configured; re-run install.sh after fixing the error above." >&2' ERR
 
-PTTY_VERSION="0.2.0"
+PTTY_VERSION="0.2.1"
 MIN_TMUX_VERSION="3.2"
 
 # Remote files are pinned to a tagged release by default (integrity-verified
@@ -18,7 +18,7 @@ PTTY_REF="${PTTY_REF:-v$PTTY_VERSION}"
 # sha256 of the SHA256SUMS manifest at $PTTY_REF, generated with
 # tools/gen-sha256sums.sh. Every remote-downloaded file is verified against
 # entries in that manifest before it is made executable.
-MANIFEST_SHA256="ee98ae4821dd3df8e6cf892e08b104f43278990434752759e8928237c4c50ddb"
+MANIFEST_SHA256="3beda5d631b1b08446a14625930f2c324eddcedebc286314748eea15519f4dfd"
 
 # Colors for output
 RED='\033[0;31m'

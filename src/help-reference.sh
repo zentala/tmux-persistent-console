@@ -2,14 +2,14 @@
 # F12 - Static Help Reference Window
 # Simple, clean documentation without decorative borders
 
-VERSION="0.2.0"  # keep in sync with install.sh PTTY_VERSION
+VERSION="0.2.1"  # keep in sync with install.sh PTTY_VERSION
 
 # Clear screen and show help
 clear
 
 cat << 'EOF'
 
-  🖥️  pTTY v0.2.0 - Quick Reference
+  🖥️  pTTY v0.2.1 - Quick Reference
 
 
   KEYBOARD SHORTCUTS

@@ -3,7 +3,7 @@
 # Part of pTTY
 
 # Version info
-VERSION="0.2.0"  # keep in sync with install.sh PTTY_VERSION
+VERSION="0.2.1"  # keep in sync with install.sh PTTY_VERSION
 HEADER="🖥️  pTTY v${VERSION}"
 
 # Colors
