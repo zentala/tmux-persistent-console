@@ -141,6 +141,19 @@ Should print all green; if anything is yellow/red it tells you exactly what's wr
 
 This creates 10 sessions (`console-1`...`console-10`) and the `connect-console` helper. `Ctrl+F1`-`Ctrl+F10` switches between those sessions after you are attached to tmux.
 
+**Upgrading an existing install:**
+
+```bash
+curl -sSL https://raw.githubusercontent.com/zentala/pTTY/main/install.sh | bash -s -- --update
+```
+
+Update mode skips dependency installs, replaces the installed files with the
+pinned release, retires files dropped from the release (moved to a `.trash-*`
+folder inside the install dir, never deleted), and reloads the running tmux
+server's config. Running sessions and their processes are untouched. Note:
+`git pull` inside `~/.tmux-persistent-console` does NOT update the runtime —
+always upgrade through the installer.
+
 ### 2. Set up a short SSH alias (recommended — this is the real DevEx win)
 
 Edit `~/.ssh/config` on your **laptop** and add a dedicated alias that drops you straight into tmux. Pick any short hostname you like — for example `tmux.example.com`, `dev`, `ptty`:

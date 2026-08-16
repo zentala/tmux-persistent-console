@@ -89,6 +89,26 @@ CHECKS=$((CHECKS + 1))
 
 rm -f "$TMUX_CALL_LOG"
 
+# --- build_session_list natural ordering -----------------------------------
+
+# Stub tmux fully: list-sessions returns lexicographically-sorted names (as
+# real tmux does), build_session_list must reorder them naturally so
+# console-10 follows console-9, not console-1.
+tmux() {
+    case "$1" in
+        list-sessions) printf 'console-1\nconsole-10\nconsole-2\nhelp\n' ;;
+        list-windows)  echo "1 main bash" ;;
+        display-message) echo "bash" ;;
+    esac
+    return 0
+}
+export -f tmux
+
+CURRENT_SESSION="console-1"
+order=$(build_session_list | awk '{print $3}' | tr '\n' ' ')
+assert_eq "sessions sort naturally (console-10 after console-2)" \
+    "console-1 console-2 console-10 help " "$order"
+
 # --- summary ---------------------------------------------------------------
 
 if [ "$FAILURES" -gt 0 ]; then

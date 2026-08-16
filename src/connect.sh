@@ -2,7 +2,7 @@
 # ~/.tmux-persistent-console/connect.sh - Easy console connection
 
 echo "==================================="
-echo "    PERSISTENT CONSOLE MANAGER     "
+echo "         pTTY CONSOLE MANAGER      "
 echo "==================================="
 echo ""
 echo "Available consoles:"
