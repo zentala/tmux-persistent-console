@@ -9,7 +9,7 @@ clear
 
 cat << 'EOF'
 
-  🖥️  PERSISTENT CONSOLE v0.2.0 - Quick Reference
+  🖥️  pTTY v0.2.0 - Quick Reference
 
 
   KEYBOARD SHORTCUTS

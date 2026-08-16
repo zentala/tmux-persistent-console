@@ -16,23 +16,16 @@ RemainAfterExit=yes
 # RestrictNamespaces here: they break interpreters/JITs and container
 # tooling that users legitimately run inside their consoles.
 NoNewPrivileges=true
-# ProtectSystem=strict was considered but rejected: it makes the whole
-# filesystem read-only except explicit ReadWritePaths, and users run dev
-# work anywhere under $HOME (not just .tmux-persistent-console/.cache), so
-# strict would break normal usage. =true only read-protects /usr and
-# /boot/efi, which is safe for a shell-spawning service.
-ProtectSystem=true
-# PrivateTmp is intentionally NOT set: tmux's default socket dir is
-# /tmp/tmux-$UID (no -S/TMUX_TMPDIR override anywhere in this repo).
-# systemd's PrivateTmp gives the service its own mount-namespaced /tmp, which
-# would hide that socket from the user's normal login shells trying to
-# `tmux attach` — breaking the product's core feature.
-# ProtectHome is intentionally NOT set: the service must write under
-# %h/.tmux-persistent-console and %h/.cache, and interactive shells need
-# full read-write access to the rest of $HOME.
-ProtectControlGroups=true
 RestrictSUIDSGID=true
-ProtectKernelModules=true
+# Mount-namespace-based sandboxing (ProtectSystem, ProtectControlGroups,
+# ProtectKernelModules, PrivateTmp, ProtectHome) is intentionally NOT used:
+# for USER-level units those directives need unprivileged user namespaces,
+# which Ubuntu 23.10+ restricts via AppArmor by default — the service then
+# fails to start at all (status=226/NAMESPACE; observed on GitHub's
+# ubuntu-latest runners). A dead service means no sessions after reboot,
+# which costs more than the marginal sandboxing of a process that already
+# runs as the user. PrivateTmp would additionally hide tmux's /tmp/tmux-$UID
+# socket from login shells and break `tmux attach` outright.
 
 [Install]
 WantedBy=default.target

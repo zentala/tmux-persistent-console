@@ -44,7 +44,7 @@ if "$TESTS_DIR/test-status-bar.sh"; then
 else
     echo ""
     echo -e "${RED}❌ Test 1 FAILED${NC}"
-    ((total_failed++))
+    total_failed=$((total_failed + 1))
 fi
 
 echo ""
@@ -66,7 +66,7 @@ if "$TESTS_DIR/test-status-position.sh"; then
 else
     echo ""
     echo -e "${RED}❌ Test 2 FAILED${NC}"
-    ((total_failed++))
+    total_failed=$((total_failed + 1))
 fi
 
 echo ""
@@ -88,7 +88,7 @@ if "$TESTS_DIR/test-status-scroll.sh"; then
 else
     echo ""
     echo -e "${RED}❌ Test 3 FAILED${NC}"
-    ((total_failed++))
+    total_failed=$((total_failed + 1))
 fi
 
 # Final summary

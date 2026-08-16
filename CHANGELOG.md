@@ -4,6 +4,39 @@ All notable changes to **pTTY** are documented in this file.
 Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
 versioning is [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+- The public install one-liner failed with a 404 for every new user: the
+  `v0.2.0` tag was cut before `SHA256SUMS` existed, while `install.sh` on
+  main pointed at it. This release ships a tag that contains the manifest.
+- Installer run from a git clone used as the install directory
+  (`~/.tmux-persistent-console`) now refreshes the flat runtime files from
+  `src/` — previously `git pull` silently left the runtime on the old
+  version.
+- Mission Control (F11) lists sessions in natural order (`console-10`
+  after `console-9`, not between `console-1` and `console-2`).
+- Rebranded remaining "PERSISTENT CONSOLE" strings in F11/F12/connect
+  to pTTY.
+
+### Added
+- `scripts/release.sh` — one-command release: bumps every embedded version,
+  regenerates `SHA256SUMS` and its pinned hash, stamps the changelog,
+  commits, tags, pushes, and verifies the tag serves the manifest. Manual
+  edits of `PTTY_VERSION` / `MANIFEST_SHA256` / tags are no longer part of
+  the release flow.
+- CI guards: main fails if the tag the installer points at does not serve
+  `SHA256SUMS` (`pr-validation.yml`); pushed `v*` tags are validated for
+  manifest presence and version consistency (`tag-validation.yml`).
+- `install.sh --update` — refresh an existing install: skips dependency
+  installs, replaces installed files, retires files dropped from the
+  release (moved to a `.trash-*` dir, never deleted), reloads the live
+  tmux config without touching running sessions.
+- Installer explains a manifest 404 (bad ref) and prints the
+  `PTTY_REF=main` dev-install workaround instead of a bare curl error.
+- Installer reloads the running tmux server's config after every
+  install/update, so new key bindings and status bar apply immediately.
+
 ## [0.2.0] — 2026-08-15
 
 ### Added

@@ -6,7 +6,9 @@
 # Build session list with status and details.
 # Reads: $CURRENT_SESSION (set by the caller before sourcing/calling).
 build_session_list() {
-    local sessions=$(tmux list-sessions -F "#{session_name}" 2>/dev/null)
+    # sort -V: natural (version) order, so console-10 follows console-9
+    # instead of landing between console-1 and console-2.
+    local sessions=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | sort -V)
 
     if [ -z "$sessions" ]; then
         echo "No sessions found"

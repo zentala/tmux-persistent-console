@@ -18,7 +18,7 @@ PTTY_REF="${PTTY_REF:-v$PTTY_VERSION}"
 # sha256 of the SHA256SUMS manifest at $PTTY_REF, generated with
 # tools/gen-sha256sums.sh. Every remote-downloaded file is verified against
 # entries in that manifest before it is made executable.
-MANIFEST_SHA256="bde6b151c825bfcc7cc5fb0c71d3c09efac6bd867f19d3895a8add97c21cf8cb"
+MANIFEST_SHA256="ee98ae4821dd3df8e6cf892e08b104f43278990434752759e8928237c4c50ddb"
 
 # Colors for output
 RED='\033[0;31m'
@@ -30,16 +30,21 @@ NC='\033[0m' # No Color
 # Parse flags
 DRY_RUN=0
 NO_SYSTEMD=0
+UPDATE_MODE=0
 for arg in "$@"; do
     case "$arg" in
         --dry-run|-n) DRY_RUN=1 ;;
         --no-systemd) NO_SYSTEMD=1 ;;
+        --update|-u) UPDATE_MODE=1 ;;
         --version|-V) echo "pTTY v$PTTY_VERSION"; exit 0 ;;
         --help|-h)
             cat <<EOF
-Usage: install.sh [--dry-run] [--no-systemd] [--version] [--help]
+Usage: install.sh [--dry-run] [--update] [--no-systemd] [--version] [--help]
 
   --dry-run     Show what would happen without changing anything
+  --update      Refresh an existing install: skip dependency installs, replace
+                installed files, remove files dropped from the release, reload
+                the live tmux config (sessions keep running)
   --no-systemd  Skip systemd user service setup and create sessions directly
   --version     Print version and exit
   --help        This help
@@ -96,6 +101,11 @@ if [ -f /.dockerenv ] || [ -n "${CI:-}" ] || [ -n "${CONTAINER:-}" ]; then
     SKIP_TUI_DEPS=1
     echo -e "${YELLOW}📦 Container/CI environment detected — skipping optional TUI deps (gum, fzf)${NC}"
     echo -e "${YELLOW}   Set SKIP_TUI_DEPS=0 to force install them.${NC}"
+fi
+
+if [ "$UPDATE_MODE" -eq 1 ]; then
+    SKIP_TUI_DEPS=1
+    echo -e "${YELLOW}🔄 Update mode — refreshing installed files, dependencies untouched${NC}"
 fi
 
 # Request sudo up front (once) if a later step is going to need it, instead of
@@ -312,7 +322,12 @@ REPO_ROOT="$(pwd)"
 
 if [ -d "$REPO_ROOT/src" ]; then
     if [ "$REPO_ROOT" = "$INSTALL_DIR" ]; then
-        echo -e "${YELLOW}📋 Running from install dir — using src/ in place (no copy)${NC}"
+        # The clone doubles as the runtime dir: tmux.conf references flat
+        # files at the repo root, so src/ must be copied over them or the
+        # runtime silently keeps running the previous version. The root
+        # copies show up as untracked files in the clone — expected.
+        echo -e "${YELLOW}📋 Install dir is a git clone — refreshing flat runtime files from src/${NC}"
+        cp -r "$REPO_ROOT/src/"* "$INSTALL_DIR/"
         if [ -f "$REPO_ROOT/scripts/doctor.sh" ]; then
             cp "$REPO_ROOT/scripts/doctor.sh" "$INSTALL_DIR/doctor.sh"
         fi
@@ -340,6 +355,11 @@ else
     MANIFEST_FILE="$(mktemp)"
     if ! curl -fsSL "$REPO_URL_BASE/SHA256SUMS" -o "$MANIFEST_FILE"; then
         echo -e "${RED}❌ Failed to download SHA256SUMS from $REPO_URL_BASE/SHA256SUMS${NC}"
+        echo -e "${RED}   Most likely the release ref '$PTTY_REF' does not exist on GitHub or${NC}"
+        echo -e "${RED}   does not contain SHA256SUMS. Please report this at:${NC}"
+        echo -e "${RED}     https://github.com/zentala/pTTY/issues${NC}"
+        echo -e "${YELLOW}   Workaround (dev install, tracks branch tip):${NC}"
+        echo -e "${YELLOW}     curl -sSL https://raw.githubusercontent.com/zentala/pTTY/main/install.sh | PTTY_REF=main bash${NC}"
         exit 1
     fi
     ACTUAL_MANIFEST_SHA256="$(sha256sum "$MANIFEST_FILE" | awk '{print $1}')"
@@ -414,6 +434,32 @@ fi
 SRC_DIR="$INSTALL_DIR"
 if [ "$REPO_ROOT" != "$INSTALL_DIR" ] && [ -d "$REPO_ROOT/src" ]; then
     SRC_DIR="$INSTALL_DIR"   # already copied above
+fi
+
+# Retire files that are no longer part of the release. Anything *.sh/*.tmux
+# at the install root that this installer did not just put there is a
+# leftover from an older version (e.g. status-bar-legacy.sh) — stale copies
+# confuse debugging and keep dead code executable. Moved to a .trash dir
+# rather than deleted, in case the user parked something of their own here.
+# Skipped when the install dir is a git clone (dev setup — git manages it).
+if [ ! -d "$INSTALL_DIR/.git" ]; then
+    KNOWN_ROOT_FILES=" setup.sh connect.sh tmux.conf tmux-console.service uninstall.sh \
+safe-exit.sh console-help.sh help-reference.sh status-format-v4.tmux \
+theme-config.sh mission-control.sh shortcuts-popup.sh click-session.sh \
+restart-confirm.sh restart-session.sh doctor.sh install.sh "
+    TRASH_DIR="$INSTALL_DIR/.trash-$(date +%Y%m%d_%H%M%S)"
+    for f in "$INSTALL_DIR"/*.sh "$INSTALL_DIR"/*.tmux; do
+        [ -f "$f" ] || continue
+        base="$(basename "$f")"
+        case "$KNOWN_ROOT_FILES" in
+            *" $base "*) ;;
+            *)
+                mkdir -p "$TRASH_DIR"
+                mv "$f" "$TRASH_DIR/$base"
+                echo -e "${YELLOW}🧹 Retired stale file: $base → ${TRASH_DIR#"$HOME"/}/${NC}"
+                ;;
+        esac
+    done
 fi
 
 # Make scripts executable
@@ -586,8 +632,24 @@ else
     echo -e "${GREEN}✅ Service active, 10 sessions verified${NC}"
 fi
 
+# A live tmux server keeps serving the old key bindings and status bar until
+# the config is re-sourced — reload it so the update is visible immediately.
+# Safe for running sessions: source-file only re-applies configuration.
+if tmux info >/dev/null 2>&1; then
+    if tmux source-file "$HOME/.tmux.conf" 2>/dev/null; then
+        echo -e "${GREEN}🔁 Reloaded config in the running tmux server (sessions untouched)${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Could not reload the running tmux server — apply manually:${NC}"
+        echo -e "${YELLOW}     tmux source-file ~/.tmux.conf${NC}"
+    fi
+fi
+
 echo ""
-echo -e "${GREEN}✅ Installation complete!${NC}"
+if [ "$UPDATE_MODE" -eq 1 ]; then
+    echo -e "${GREEN}✅ Update complete — pTTY v$PTTY_VERSION${NC}"
+else
+    echo -e "${GREEN}✅ Installation complete!${NC}"
+fi
 echo ""
 echo -e "${BLUE}🚀 Quick Start:${NC}"
 echo -e "   ${YELLOW}connect-console${NC}           # Interactive session menu"

@@ -1,0 +1,43 @@
+name: 🏷️ Tag Validation
+
+# A release tag is a promise: the public installer downloads SHA256SUMS and
+# payload files from raw.githubusercontent.com at this exact ref. This
+# workflow fails loudly if a tag is pushed whose tree cannot honor that
+# promise (the v0.2.0 incident: tag cut before SHA256SUMS existed → every
+# fresh install died on a 404).
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-tag:
+    name: ✅ Tag tree honors the installer contract
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout tag
+        uses: actions/checkout@v4
+
+      - name: 📋 Tag tree contains SHA256SUMS
+        run: |
+          if [ ! -f SHA256SUMS ]; then
+            echo "::error::tag ${GITHUB_REF_NAME} has no SHA256SUMS — installs from this tag 404"
+            exit 1
+          fi
+
+      - name: 🔢 PTTY_VERSION matches the tag name
+        run: |
+          INSTALL_VERSION=$(grep -oP '^PTTY_VERSION="\K[^"]+' install.sh)
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$INSTALL_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::install.sh at ${GITHUB_REF_NAME} says PTTY_VERSION=$INSTALL_VERSION"
+            exit 1
+          fi
+
+      - name: 🔐 Manifest matches the tagged tree and pinned hash
+        run: |
+          bash tools/gen-sha256sums.sh --check

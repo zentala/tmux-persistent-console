@@ -257,6 +257,27 @@ jobs:
             echo "✅ Tag matches install.sh/CHANGELOG version"
           fi
 
+      # The public one-liner serves install.sh from main, which then downloads
+      # payload files from tag v$PTTY_VERSION. main is broken for every new
+      # user whenever that tag does not serve SHA256SUMS (the v0.2.0
+      # incident). Retries because raw.githubusercontent.com can lag a fresh
+      # tag push by a few seconds.
+      - name: 🌐 Released ref serves SHA256SUMS (main only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          INSTALL_VERSION=$(grep -oP '^PTTY_VERSION="\K[^"]+' install.sh)
+          RAW_URL="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/v${INSTALL_VERSION}/SHA256SUMS"
+          echo "Checking $RAW_URL"
+          for i in $(seq 1 12); do
+            if curl -fsSL "$RAW_URL" -o /dev/null; then
+              echo "✅ v$INSTALL_VERSION serves SHA256SUMS — the one-liner works"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::install.sh on main points at v$INSTALL_VERSION but $RAW_URL is unreachable — every fresh install fails. Cut the release with scripts/release.sh."
+          exit 1
+
   # Native systemd roundtrip: install.sh's real (non-CI-shortcut) path installs
   # the autostart service, then the shipped uninstaller must remove every
   # trace of it. Runs on the bare runner (not Docker — the Docker test harness
@@ -291,6 +312,12 @@ jobs:
           # job exercises the real end-user install path we ship.
           unset CI CONTAINER
           bash install.sh
+
+      - name: 🩺 Service diagnostics on failure
+        if: failure()
+        run: |
+          systemctl --user status tmux-console.service --no-pager || true
+          journalctl --user -u tmux-console.service -n 50 --no-pager || true
 
       - name: ✅ Verify service enabled and sessions exist
         run: |
