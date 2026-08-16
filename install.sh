@@ -635,7 +635,8 @@ fi
 # A live tmux server keeps serving the old key bindings and status bar until
 # the config is re-sourced — reload it so the update is visible immediately.
 # Safe for running sessions: source-file only re-applies configuration.
-if tmux info >/dev/null 2>&1; then
+# (`tmux ls`, not `tmux info` — info exits 1 without an attached client.)
+if tmux ls >/dev/null 2>&1; then
     if tmux source-file "$HOME/.tmux.conf" 2>/dev/null; then
         echo -e "${GREEN}🔁 Reloaded config in the running tmux server (sessions untouched)${NC}"
     else
