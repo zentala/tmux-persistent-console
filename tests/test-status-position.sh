@@ -1,6 +1,8 @@
 #!/bin/bash
-# Precise status bar position test - checks EXACT line where status bar appears
-# Must be LAST visible line (height-1) or LAST line (height)
+# Test the native tmux status line configuration per session.
+# v0.2 renders the bar via status-format (native status line), so position
+# and content are asserted through tmux options and format evaluation —
+# capture-pane can never contain a native status line.
 
 set -e
 
@@ -18,88 +20,58 @@ fi
 CURRENT_SESSION=$(tmux display-message -p '#S')
 
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${CYAN}🎯 Precise Status Bar Position Test${NC}"
+echo -e "${CYAN}📐 Status Line Position & Content Test${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
 check_precise_position() {
     local session_name="$1"
+    local errors=0
 
     echo -e "${CYAN}Testing session: $session_name${NC}"
 
-    # Get terminal dimensions
-    local width=$(tmux display-message -p -t "$session_name" '#{pane_width}')
-    local height=$(tmux display-message -p -t "$session_name" '#{pane_height}')
-
-    echo "   Terminal: ${width}x${height}"
-
-    # Capture pane with line numbers
-    local numbered_content=$(tmux capture-pane -t "$session_name" -p -S - -E - | cat -n)
-
-    # Find which line contains status bar
-    local status_line=$(echo "$numbered_content" | grep "F1.*F10" | head -1)
-
-    if [ -z "$status_line" ]; then
-        echo -e "   ${RED}❌ FAIL: Status bar not found in pane${NC}"
-        return 1
-    fi
-
-    # Extract line number
-    local line_num=$(echo "$status_line" | awk '{print $1}')
-
-    # Count total lines
-    local total_lines=$(echo "$numbered_content" | wc -l)
-
-    echo "   Status bar at line: $line_num / $total_lines"
-
-    # Status bar should be at LAST line (total_lines) or LAST-1
-    local expected_min=$((total_lines - 1))
-    local expected_max=$total_lines
-
-    if [ "$line_num" -lt "$expected_min" ] || [ "$line_num" -gt "$expected_max" ]; then
-        echo -e "   ${RED}❌ FAIL: Status bar at wrong position${NC}"
-        echo "      Expected: line $expected_min or $expected_max (bottom)"
-        echo "      Got: line $line_num"
-        echo ""
-        echo -e "${YELLOW}   Last 5 lines of pane:${NC}"
-        echo "$numbered_content" | tail -5
-        return 1
-    fi
-
-    echo -e "   ${GREEN}✅ PASS: Status bar is at bottom (line $line_num/${total_lines})${NC}"
-
-    # Check for duplicates
-    local status_count=$(echo "$numbered_content" | grep -c "F1.*F10" || true)
-    if [ "$status_count" -ne 1 ]; then
-        echo -e "   ${RED}❌ FAIL: Found $status_count status bars (expected 1)${NC}"
-        return 1
-    fi
-
-    echo -e "   ${GREEN}✅ PASS: Only one status bar present${NC}"
-
-    # Verify tmux status-position setting
-    local status_pos=$(tmux show-options -g status-position | awk '{print $2}')
-    if [ "$status_pos" != "bottom" ]; then
-        echo -e "   ${YELLOW}⚠️  WARNING: status-position is '$status_pos' (expected 'bottom')${NC}"
+    local status_on=$(tmux show-options -gqv status)
+    if [ "$status_on" != "on" ] && [ "$status_on" != "2" ]; then
+        echo -e "   ${RED}❌ FAIL: status is '$status_on', expected on${NC}"
+        errors=$((errors + 1))
     else
-        echo -e "   ${GREEN}✅ PASS: tmux status-position = bottom${NC}"
+        echo -e "   ${GREEN}✅ status line enabled${NC}"
+    fi
+
+    local position=$(tmux show-options -gqv status-position)
+    if [ "$position" != "bottom" ]; then
+        echo -e "   ${RED}❌ FAIL: status-position is '$position', expected bottom${NC}"
+        errors=$((errors + 1))
+    else
+        echo -e "   ${GREEN}✅ status-position = bottom${NC}"
+    fi
+
+    # Evaluate the rendered status line in this session's context.
+    local rendered=$(tmux display-message -p -t "$session_name" '#{T:status-format[0]}')
+    if [ -z "$rendered" ]; then
+        echo -e "   ${RED}❌ FAIL: status-format[0] renders empty${NC}"
+        errors=$((errors + 1))
+    else
+        for key in F1 F10 F11 F12; do
+            if ! echo "$rendered" | grep -q "$key"; then
+                echo -e "   ${RED}❌ FAIL: rendered status line lacks $key${NC}"
+                errors=$((errors + 1))
+            fi
+        done
+        if [ "$errors" -eq 0 ]; then
+            echo -e "   ${GREEN}✅ rendered status line contains F1/F10/F11/F12${NC}"
+        fi
     fi
 
     echo ""
-    return 0
+    return $errors
 }
 
-# Test current session
-check_precise_position "$CURRENT_SESSION"
-result=$?
+total_errors=0
 
-# Test all console sessions
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${CYAN}Testing all console sessions...${NC}"
-echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
-
-total_errors=$result
+result=0
+check_precise_position "$CURRENT_SESSION" || result=$?
+total_errors=$((total_errors + result))
 
 for i in {1..10}; do
     session="console-$i"
@@ -110,31 +82,16 @@ for i in {1..10}; do
         continue
     fi
 
-    # Switch to session
-    tmux switch-client -t "$session"
-    sleep 0.2
-
-    check_precise_position "$session"
-    session_result=$?
-    ((total_errors += session_result))
+    result=0
+    check_precise_position "$session" || result=$?
+    total_errors=$((total_errors + result))
 done
 
-# Return to original
-tmux switch-client -t "$CURRENT_SESSION"
-
-# Summary
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-if [ $total_errors -eq 0 ]; then
-    echo -e "${GREEN}✅ ALL POSITION TESTS PASSED${NC}"
-    echo -e "${GREEN}   Status bar is always at the bottom!${NC}"
+if [ "$total_errors" -eq 0 ]; then
+    echo -e "${GREEN}✅ Status line position/content correct in every session${NC}"
     exit 0
 else
-    echo -e "${RED}❌ POSITION TESTS FAILED${NC}"
-    echo -e "${RED}   Status bar position is incorrect${NC}"
-    echo ""
-    echo -e "${YELLOW}Debugging tips:${NC}"
-    echo "   1. Check tmux.conf: grep 'status-position' ~/.vps/sessions/src/tmux.conf"
-    echo "   2. Check status-format: tmux show-options -g | grep status-format"
-    echo "   3. Reload config: tmux source-file ~/.vps/sessions/src/tmux.conf"
+    echo -e "${RED}❌ Found $total_errors error(s)${NC}"
     exit 1
 fi

@@ -59,7 +59,7 @@ check_status_bar() {
         echo -e "   ${RED}❌ FAIL: Missing icons in status bar${NC}"
         echo "      Expected: 12 icons total (F1-F10 + F11 + F12)"
         echo "      Got: $icon_count icons"
-        ((errors++))
+        errors=$((errors + 1))
     else
         echo -e "   ${GREEN}✅ PASS: Icons present ($icon_count total)${NC}"
     fi
@@ -69,7 +69,7 @@ check_status_bar() {
         echo -e "   ${RED}❌ FAIL: Status bar not at bottom of screen${NC}"
         echo "      Expected: status-position = bottom"
         echo "      Got: status-position = $status_position"
-        ((errors++))
+        errors=$((errors + 1))
     else
         echo -e "   ${GREEN}✅ PASS: Status bar is at bottom${NC}"
     fi
@@ -80,7 +80,7 @@ check_status_bar() {
         if ! echo "$status_right" | grep -q " F$i "; then
             echo -e "   ${RED}❌ FAIL: Missing F$i indicator${NC}"
             has_all_sessions=0
-            ((errors++))
+            errors=$((errors + 1))
         fi
     done
     if [ "$has_all_sessions" -eq 1 ]; then
@@ -91,7 +91,7 @@ check_status_bar() {
     local current_highlighted=$(echo "$status_right" | grep -c "colour39" || true)
     if [ "$current_highlighted" -eq 0 ]; then
         echo -e "   ${RED}❌ FAIL: No active session highlighting found${NC}"
-        ((errors++))
+        errors=$((errors + 1))
     else
         echo -e "   ${GREEN}✅ PASS: Active session highlighting configured (colour39)${NC}"
     fi
@@ -102,8 +102,8 @@ check_status_bar() {
 }
 
 # Test initial state
-check_status_bar "$CURRENT_SESSION" "Initial state in $CURRENT_SESSION"
-initial_result=$?
+initial_result=0
+check_status_bar "$CURRENT_SESSION" "Initial state in $CURRENT_SESSION" || initial_result=$?
 
 # Test switching to each console
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -116,28 +116,31 @@ total_errors=$initial_result
 for i in {1..10}; do
     session="console-$i"
 
-    # Switch to session
+    # Switch to session. switch-client needs an attached client — in headless
+    # runs (CI: detached session, no client) it fails with "no current
+    # client"; the checks below read global options and target sessions
+    # explicitly, so a failed switch must not abort the test.
     echo -e "${CYAN}→ Switching to $session${NC}"
-    tmux switch-client -t "$session" 2>/dev/null || {
+    tmux has-session -t "$session" 2>/dev/null || {
         echo -e "${YELLOW}⚠️  Session $session doesn't exist, creating...${NC}"
         tmux new-session -d -s "$session" 2>/dev/null || true
-        tmux switch-client -t "$session"
     }
+    tmux switch-client -t "$session" 2>/dev/null || true
 
     # Wait for status bar to update
     sleep 0.3
 
     # Check status bar
-    check_status_bar "$session" "After switch to $session"
-    result=$?
-    ((total_errors += result))
+    result=0
+    check_status_bar "$session" "After switch to $session" || result=$?
+    total_errors=$((total_errors + result))
 
     echo ""
 done
 
 # Return to original session
 echo -e "${CYAN}→ Returning to $CURRENT_SESSION${NC}"
-tmux switch-client -t "$CURRENT_SESSION"
+tmux switch-client -t "$CURRENT_SESSION" 2>/dev/null || true
 
 # Final summary
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"

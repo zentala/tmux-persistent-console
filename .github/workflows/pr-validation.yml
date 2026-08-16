@@ -313,6 +313,12 @@ jobs:
           unset CI CONTAINER
           bash install.sh
 
+      - name: 🩺 Service diagnostics on failure
+        if: failure()
+        run: |
+          systemctl --user status tmux-console.service --no-pager || true
+          journalctl --user -u tmux-console.service -n 50 --no-pager || true
+
       - name: ✅ Verify service enabled and sessions exist
         run: |
           systemctl --user is-enabled tmux-console.service
