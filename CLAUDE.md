@@ -56,6 +56,32 @@ changing behavior.
   Any new referenced file must be included in the remote download list in
   `install.sh`.
 
+## Release Process
+
+**The only supported way to cut a release is `scripts/release.sh <version>`.**
+Never hand-edit `PTTY_VERSION`, `MANIFEST_SHA256`, `SHA256SUMS`, the `VERSION`
+constants in `src/mission-control.sh` / `src/help-reference.sh`, or git tags —
+hand-editing is how the v0.2.0 incident happened (tag cut without
+`SHA256SUMS`; every fresh install died on a 404).
+
+How releasing works:
+
+1. Write the changes under a `## [Unreleased]` heading in `CHANGELOG.md`
+   (merged to main like any other change).
+2. On a clean, pushed main: `scripts/release.sh X.Y.Z --dry-run` to see the
+   plan, then without `--dry-run` to release. The script bumps every embedded
+   version, regenerates the manifest and its pinned hash, stamps the
+   changelog, commits, tags `vX.Y.Z`, pushes, and polls
+   raw.githubusercontent.com until the tag serves `SHA256SUMS`.
+3. CI enforces the contract: `tag-validation.yml` rejects tags whose tree
+   breaks the installer, and `pr-validation.yml` fails main whenever
+   `install.sh` points at a ref that does not serve the manifest.
+
+Mental model: the public one-liner serves `install.sh` from **main**, but the
+script downloads payload files from tag `v$PTTY_VERSION` — so the version
+constant on main is a promise that the tag exists and contains `SHA256SUMS`.
+`release.sh` keeps that promise atomically.
+
 ## Development Rules
 
 - Read existing scripts before editing; keep shell changes small and portable.
